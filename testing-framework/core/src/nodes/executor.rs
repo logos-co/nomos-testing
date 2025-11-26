@@ -58,7 +58,10 @@ fn inject_ibd_into_cryptarchia(yaml_value: &mut Value) {
             Value::String("topic".into()),
             Value::String(nomos_node::CONSENSUS_TOPIC.into()),
         );
-        cryptarchia.insert(Value::String("network_adapter_settings".into()), Value::Mapping(network));
+        cryptarchia.insert(
+            Value::String("network_adapter_settings".into()),
+            Value::Mapping(network),
+        );
     }
     if !cryptarchia.contains_key(&Value::String("sync".into())) {
         let mut orphan = Mapping::new();

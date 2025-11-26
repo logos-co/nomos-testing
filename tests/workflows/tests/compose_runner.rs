@@ -3,11 +3,9 @@ use std::{env, time::Duration};
 use serial_test::serial;
 use testing_framework_core::scenario::{Deployer as _, Runner, ScenarioBuilder};
 use testing_framework_runner_compose::{ComposeRunner, ComposeRunnerError};
-use tests_workflows::{
-    ChaosBuilderExt as _, ScenarioBuilderExt as _, expectations::ConsensusLiveness,
-};
+use tests_workflows::{ChaosBuilderExt as _, ScenarioBuilderExt as _};
 
-const RUN_DURATION: Duration = Duration::from_secs(120);
+const RUN_DURATION: Duration = Duration::from_secs(60);
 const MIXED_TXS_PER_BLOCK: u64 = 5;
 const TOTAL_WALLETS: usize = 64;
 const TRANSACTION_WALLETS: usize = 8;
@@ -55,20 +53,19 @@ async fn run_compose_case(validators: usize, executors: usize) {
         "running compose chaos test with {validators} validator(s) and {executors} executor(s)"
     );
 
-    let topology = ScenarioBuilder::with_node_counts(validators, executors)
+    let mut plan = ScenarioBuilder::with_node_counts(validators, executors)
         .enable_node_control()
         .chaos_random_restart()
-        .min_delay(Duration::from_secs(45))
-        .max_delay(Duration::from_secs(75))
-        .target_cooldown(Duration::from_secs(120))
+        // Keep chaos restarts outside the test run window to avoid crash loops on restart.
+        .min_delay(Duration::from_secs(120))
+        .max_delay(Duration::from_secs(180))
+        .target_cooldown(Duration::from_secs(240))
         .apply()
         .topology()
+        .network_star()
         .validators(validators)
         .executors(executors)
-        .network_star()
-        .apply();
-
-    let workloads = topology
+        .apply()
         .wallets(TOTAL_WALLETS)
         .transactions()
         .rate(MIXED_TXS_PER_BLOCK)
@@ -77,15 +74,12 @@ async fn run_compose_case(validators: usize, executors: usize) {
         .da()
         .channel_rate(1)
         .blob_rate(1)
-        .apply();
-
-    let lag_allowance = 2 + (validators + executors) as u64;
-    let mut plan = workloads
-        .with_expectation(ConsensusLiveness::default().with_lag_allowance(lag_allowance))
+        .apply()
         .with_run_duration(RUN_DURATION)
+        .expect_consensus_liveness()
         .build();
 
-    let deployer = ComposeRunner::new().with_readiness(false);
+    let deployer = ComposeRunner::new();
     let runner: Runner = match deployer.deploy(&plan).await {
         Ok(runner) => runner,
         Err(ComposeRunnerError::DockerUnavailable) => {

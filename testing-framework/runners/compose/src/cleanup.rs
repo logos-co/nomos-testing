@@ -45,10 +45,6 @@ impl CleanupGuard for RunnerCleanup {
         let preserve = env::var("COMPOSE_RUNNER_PRESERVE").is_ok()
             || env::var("TESTNET_RUNNER_PRESERVE").is_ok();
         if preserve {
-            if let Some(mut handle) = self.cfgsync.take() {
-                handle.shutdown();
-            }
-
             if let Some(workspace) = self.workspace.take() {
                 let keep = workspace.into_inner().keep();
                 eprintln!(

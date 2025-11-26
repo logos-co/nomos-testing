@@ -39,7 +39,8 @@ ENV NOMOS_CIRCUITS=/opt/circuits
 
 # Use debug builds to keep the linker memory footprint low; we only need
 # binaries for integration testing, not optimized releases.
-RUN cargo build --all-features
+RUN cargo build --all-features --workspace && \
+    cargo build -p nomos-node -p nomos-executor
 
 # ===========================
 # NODE IMAGE
@@ -63,7 +64,6 @@ COPY --from=builder /opt/circuits /opt/circuits
 
 COPY --from=builder /nomos/target/debug/nomos-node /usr/bin/nomos-node
 COPY --from=builder /nomos/target/debug/nomos-executor /usr/bin/nomos-executor
-COPY --from=builder /nomos/target/debug/nomos-cli /usr/bin/nomos-cli
 COPY --from=builder /nomos/target/debug/cfgsync-server /usr/bin/cfgsync-server
 COPY --from=builder /nomos/target/debug/cfgsync-client /usr/bin/cfgsync-client
 

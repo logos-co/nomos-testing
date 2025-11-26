@@ -1,11 +1,13 @@
 [workspace]
 members = [
+  "patches/services-utils",
   "testing-framework/configs",
   "testing-framework/core",
   "testing-framework/runners/compose",
   "testing-framework/runners/k8s",
   "testing-framework/runners/local",
   "testing-framework/workflows",
+  "testnet/cfgsync",
   "tests/workflows",
 ]
 resolver = "2"
@@ -25,6 +27,10 @@ unsafe_code = "allow"
 
 [workspace.lints.clippy]
 all = "allow"
+
+[patch."https://github.com/logos-co/nomos-node.git"]
+cfgsync        = { path = "testnet/cfgsync" }
+services-utils = { path = "patches/services-utils" }
 
 [workspace.dependencies]
 # Local testing framework crates
@@ -86,6 +92,8 @@ async-trait      = { default-features = false, version = "0.1" }
 bytes            = { default-features = false, version = "1.3" }
 hex              = { default-features = false, version = "0.4.3" }
 libp2p           = { default-features = false, version = "0.55" }
+overwatch        = { default-features = false, git = "https://github.com/logos-co/Overwatch", rev = "f5a9902" }
+overwatch-derive = { default-features = false, git = "https://github.com/logos-co/Overwatch", rev = "f5a9902" }
 rand             = { default-features = false, version = "0.8" }
 reqwest          = { default-features = false, version = "0.12" }
 serde            = { default-features = true, version = "1.0", features = ["derive"] }

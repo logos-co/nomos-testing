@@ -1,0 +1,9 @@
+# General trim for runner images and CI builds
+.git
+target
+.tmp
+tests/workflows/.tmp*
+book
+scripts/build-rapidsnark.sh~
+rust-project-all-in-one.txt
+**/*.log

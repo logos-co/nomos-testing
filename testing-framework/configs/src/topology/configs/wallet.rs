@@ -4,7 +4,7 @@ use num_bigint::BigUint;
 use zksign::{PublicKey, SecretKey};
 
 /// Collection of wallet accounts that should be funded at genesis.
-#[derive(Clone, Default, Debug)]
+#[derive(Clone, Default, Debug, serde::Serialize, serde::Deserialize)]
 pub struct WalletConfig {
     pub accounts: Vec<WalletAccount>,
 }
@@ -44,7 +44,7 @@ impl WalletConfig {
 }
 
 /// Wallet account that holds funds in the genesis state.
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct WalletAccount {
     pub label: String,
     pub secret_key: SecretKey,

@@ -8,31 +8,32 @@ use tests_workflows::ScenarioBuilderExt as _;
 const RUN_DURATION: Duration = Duration::from_secs(60);
 const VALIDATORS: usize = 1;
 const EXECUTORS: usize = 1;
-// Kubernetes has less throughput headroom than the local runner, so we use a
-// lighter per-block rate while keeping the same mixed workload shape.
-const MIXED_TXS_PER_BLOCK: u64 = 2;
+const MIXED_TXS_PER_BLOCK: u64 = 5;
+const TOTAL_WALLETS: usize = 64;
+const TRANSACTION_WALLETS: usize = 8;
 
 #[tokio::test]
 #[ignore = "requires access to a Kubernetes cluster"]
 #[serial]
 async fn k8s_runner_tx_workload() {
-    let topology = ScenarioBuilder::with_node_counts(VALIDATORS, EXECUTORS)
+    let mut plan = ScenarioBuilder::with_node_counts(VALIDATORS, EXECUTORS)
         .topology()
+        .network_star()
         .validators(VALIDATORS)
         .executors(EXECUTORS)
-        .network_star()
-        .apply();
-
-    let workloads = topology
+        .apply()
+        .wallets(TOTAL_WALLETS)
         .transactions()
         .rate(MIXED_TXS_PER_BLOCK)
+        .users(TRANSACTION_WALLETS)
         .apply()
         .da()
         .channel_rate(1)
         .blob_rate(1)
-        .apply();
-
-    let mut plan = workloads.with_run_duration(RUN_DURATION).build();
+        .apply()
+        .with_run_duration(RUN_DURATION)
+        .expect_consensus_liveness()
+        .build();
 
     let deployer = K8sRunner::new();
     let runner: Runner = match deployer.deploy(&plan).await {

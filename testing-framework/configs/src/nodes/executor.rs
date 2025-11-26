@@ -78,7 +78,9 @@ pub fn create_executor_config(config: GeneralConfig) -> ExecutorConfig {
             starting_state: StartingState::Genesis {
                 genesis_tx: config.consensus_config.genesis_tx,
             },
-            recovery_file: PathBuf::from("./recovery/cryptarchia.json"),
+            // Disable on-disk recovery in compose tests to avoid serde errors on
+            // non-string keys and keep services alive.
+            recovery_file: PathBuf::new(),
             bootstrap: chain_service::BootstrapConfig {
                 prolonged_bootstrap_period: Duration::from_secs(3),
                 force_bootstrap: false,

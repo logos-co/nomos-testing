@@ -76,7 +76,9 @@ pub fn create_validator_config(config: GeneralConfig) -> ValidatorConfig {
             starting_state: StartingState::Genesis {
                 genesis_tx: config.consensus_config.genesis_tx,
             },
-            recovery_file: PathBuf::from("./recovery/cryptarchia.json"),
+            // Disable on-disk recovery in compose tests to avoid serde errors on
+            // non-string keys and keep services alive.
+            recovery_file: PathBuf::new(),
             bootstrap: chain_service::BootstrapConfig {
                 prolonged_bootstrap_period: config.bootstrapping_config.prolonged_bootstrap_period,
                 force_bootstrap: false,

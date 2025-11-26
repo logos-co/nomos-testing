@@ -2,14 +2,12 @@ use std::{fs::File, num::NonZero, path::Path, time::Duration};
 
 use anyhow::{Context as _, Result};
 use nomos_da_network_core::swarm::ReplicationConfig;
-use nomos_tracing::metrics::otlp::OtlpMetricsConfig;
-use nomos_tracing_service::{MetricsLayer, TracingSettings};
+use nomos_tracing_service::TracingSettings;
 use nomos_utils::bounded_duration::{MinimalBoundedDuration, SECOND};
-use reqwest::Url;
 use serde::{Deserialize, Serialize};
 use serde_with::serde_as;
 
-use crate::topology::GeneratedTopology;
+use crate::topology::{GeneratedTopology, configs::wallet::WalletConfig};
 
 #[serde_as]
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -19,6 +17,14 @@ pub struct CfgSyncConfig {
     pub timeout: u64,
     pub security_param: NonZero<u32>,
     pub active_slot_coeff: f64,
+    #[serde(default)]
+    pub wallet: WalletConfig,
+    #[serde(default)]
+    pub ids: Option<Vec<[u8; 32]>>,
+    #[serde(default)]
+    pub da_ports: Option<Vec<u16>>,
+    #[serde(default)]
+    pub blend_ports: Option<Vec<u16>>,
     pub subnetwork_size: usize,
     pub dispersal_factor: usize,
     pub num_samples: u16,
@@ -70,7 +76,13 @@ pub fn apply_topology_overrides(
     cfg.security_param = consensus.security_param;
     cfg.active_slot_coeff = consensus.active_slot_coeff;
 
-    let da = &topology.config().da_params;
+    let config = topology.config();
+    cfg.wallet = config.wallet_config.clone();
+    cfg.ids = Some(topology.nodes().map(|node| node.id).collect());
+    cfg.da_ports = Some(topology.nodes().map(|node| node.da_port).collect());
+    cfg.blend_ports = Some(topology.nodes().map(|node| node.blend_port).collect());
+
+    let da = &config.da_params;
     cfg.subnetwork_size = da.subnetwork_size;
     cfg.dispersal_factor = da.dispersal_factor;
     cfg.num_samples = da.num_samples;
@@ -89,11 +101,7 @@ pub fn apply_topology_overrides(
     cfg.replication_settings = da.replication_settings;
     cfg.retry_shares_limit = da.retry_shares_limit;
     cfg.retry_commitments_limit = da.retry_commitments_limit;
-    cfg.tracing_settings.metrics = MetricsLayer::Otlp(OtlpMetricsConfig {
-        endpoint: Url::parse("http://prometheus:9090/api/v1/otlp/v1/metrics")
-            .expect("valid prometheus otlp endpoint"),
-        host_identifier: String::new(),
-    });
+    cfg.tracing_settings = TracingSettings::default();
 }
 
 #[serde_as]
@@ -104,6 +112,13 @@ struct SerializableCfgSyncConfig {
     timeout: u64,
     security_param: NonZero<u32>,
     active_slot_coeff: f64,
+    wallet: WalletConfig,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    ids: Option<Vec<[u8; 32]>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    da_ports: Option<Vec<u16>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    blend_ports: Option<Vec<u16>>,
     subnetwork_size: usize,
     dispersal_factor: usize,
     num_samples: u16,
@@ -133,6 +148,10 @@ impl From<&CfgSyncConfig> for SerializableCfgSyncConfig {
             timeout: cfg.timeout,
             security_param: cfg.security_param,
             active_slot_coeff: cfg.active_slot_coeff,
+            wallet: cfg.wallet.clone(),
+            ids: cfg.ids.clone(),
+            da_ports: cfg.da_ports.clone(),
+            blend_ports: cfg.blend_ports.clone(),
             subnetwork_size: cfg.subnetwork_size,
             dispersal_factor: cfg.dispersal_factor,
             num_samples: cfg.num_samples,

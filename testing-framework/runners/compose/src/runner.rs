@@ -573,8 +573,24 @@ async fn ensure_remote_readiness_with_ports(
         .map(|ports| readiness_url(HttpNodeRole::Executor, ports.api))
         .collect::<Result<Vec<_>, _>>()?;
 
+    let validator_membership_urls = mapping
+        .validators
+        .iter()
+        .map(|ports| readiness_url(HttpNodeRole::Validator, ports.testing))
+        .collect::<Result<Vec<_>, _>>()?;
+    let executor_membership_urls = mapping
+        .executors
+        .iter()
+        .map(|ports| readiness_url(HttpNodeRole::Executor, ports.testing))
+        .collect::<Result<Vec<_>, _>>()?;
+
     descriptors
-        .wait_remote_readiness(&validator_urls, &executor_urls, None, None)
+        .wait_remote_readiness(
+            &validator_urls,
+            &executor_urls,
+            Some(&validator_membership_urls),
+            Some(&executor_membership_urls),
+        )
         .await
         .map_err(|source| StackReadinessError::Remote { source })
 }
@@ -996,7 +1012,7 @@ impl CleanupGuard for ComposeCleanupGuard {
 mod tests {
     use std::{collections::HashMap, net::Ipv4Addr};
 
-    use cfgsync::config::{Host, create_node_configs};
+    use cfgsync::config::{Host, PortOverrides, create_node_configs};
     use groth16::Fr;
     use nomos_core::{
         mantle::{GenesisTx as GenesisTxTrait, ledger::NoteId},
@@ -1006,10 +1022,7 @@ mod tests {
     use nomos_tracing_service::TracingSettings;
     use testing_framework_core::{
         scenario::ScenarioBuilder,
-        topology::{
-            GeneratedNodeConfig, GeneratedTopology, NodeRole as TopologyNodeRole,
-            configs::{consensus, da},
-        },
+        topology::{GeneratedNodeConfig, GeneratedTopology, NodeRole as TopologyNodeRole},
     };
     use zksign::PublicKey;
 
@@ -1021,9 +1034,13 @@ mod tests {
         let tracing_settings = tracing_settings(&topology);
 
         let configs = create_node_configs(
-            &to_tests_consensus(&topology.config().consensus_params),
-            &to_tests_da(&topology.config().da_params),
+            &topology.config().consensus_params,
+            &topology.config().da_params,
             &tracing_settings,
+            &topology.config().wallet_config,
+            Some(topology.nodes().map(|node| node.id).collect()),
+            Some(topology.nodes().map(|node| node.da_port).collect()),
+            Some(topology.nodes().map(|node| node.blend_port).collect()),
             hosts,
         );
         let configs_by_identifier: HashMap<_, _> = configs
@@ -1069,9 +1086,13 @@ mod tests {
         let tracing_settings = tracing_settings(&topology);
 
         let configs = create_node_configs(
-            &to_tests_consensus(&topology.config().consensus_params),
-            &to_tests_da(&topology.config().da_params),
+            &topology.config().consensus_params,
+            &topology.config().da_params,
             &tracing_settings,
+            &topology.config().wallet_config,
+            Some(topology.nodes().map(|node| node.id).collect()),
+            Some(topology.nodes().map(|node| node.da_port).collect()),
+            Some(topology.nodes().map(|node| node.blend_port).collect()),
             hosts,
         );
         let configs_by_identifier: HashMap<_, _> = configs
@@ -1101,9 +1122,13 @@ mod tests {
         let hosts = docker_style_hosts(&topology);
 
         let configs = create_node_configs(
-            &to_tests_consensus(&topology.config().consensus_params),
-            &to_tests_da(&topology.config().da_params),
+            &topology.config().consensus_params,
+            &topology.config().da_params,
             &tracing_settings,
+            &topology.config().wallet_config,
+            Some(topology.nodes().map(|node| node.id).collect()),
+            Some(topology.nodes().map(|node| node.da_port).collect()),
+            Some(topology.nodes().map(|node| node.blend_port).collect()),
             hosts,
         );
 
@@ -1134,10 +1159,7 @@ mod tests {
     fn host_from_node(node: &GeneratedNodeConfig) -> Host {
         let identifier = identifier_for(node.role(), node.index());
         let ip = Ipv4Addr::LOCALHOST;
-        let mut host = match node.role() {
-            TopologyNodeRole::Validator => Host::default_validator_from_ip(ip, identifier),
-            TopologyNodeRole::Executor => Host::default_executor_from_ip(ip, identifier),
-        };
+        let mut host = make_host(node.role(), ip, identifier);
         host.network_port = node.network_port();
         host.da_network_port = node.da_port;
         host.blend_port = node.blend_port;
@@ -1147,10 +1169,7 @@ mod tests {
     fn docker_host(node: &GeneratedNodeConfig, octet: u8) -> Host {
         let identifier = identifier_for(node.role(), node.index());
         let ip = Ipv4Addr::new(172, 23, 0, octet);
-        let mut host = match node.role() {
-            TopologyNodeRole::Validator => Host::default_validator_from_ip(ip, identifier),
-            TopologyNodeRole::Executor => Host::default_executor_from_ip(ip, identifier),
-        };
+        let mut host = make_host(node.role(), ip, identifier);
         host.network_port = node.network_port() + 1000;
         host.da_network_port = node.da_port + 1000;
         host.blend_port = node.blend_port + 1000;
@@ -1176,33 +1195,17 @@ mod tests {
         }
     }
 
-    fn to_tests_consensus(
-        params: &consensus::ConsensusParams,
-    ) -> tests::topology::configs::consensus::ConsensusParams {
-        tests::topology::configs::consensus::ConsensusParams {
-            n_participants: params.n_participants,
-            security_param: params.security_param,
-            active_slot_coeff: params.active_slot_coeff,
-        }
-    }
-
-    fn to_tests_da(params: &da::DaParams) -> tests::topology::configs::da::DaParams {
-        tests::topology::configs::da::DaParams {
-            subnetwork_size: params.subnetwork_size,
-            dispersal_factor: params.dispersal_factor,
-            num_samples: params.num_samples,
-            num_subnets: params.num_subnets,
-            old_blobs_check_interval: params.old_blobs_check_interval,
-            blobs_validity_duration: params.blobs_validity_duration,
-            global_params_path: params.global_params_path.clone(),
-            policy_settings: params.policy_settings.clone(),
-            monitor_settings: params.monitor_settings.clone(),
-            balancer_interval: params.balancer_interval,
-            redial_cooldown: params.redial_cooldown,
-            replication_settings: params.replication_settings,
-            subnets_refresh_interval: params.subnets_refresh_interval,
-            retry_shares_limit: params.retry_shares_limit,
-            retry_commitments_limit: params.retry_commitments_limit,
+    fn make_host(role: TopologyNodeRole, ip: Ipv4Addr, identifier: String) -> Host {
+        let ports = PortOverrides {
+            network_port: None,
+            da_network_port: None,
+            blend_port: None,
+            api_port: None,
+            testing_http_port: None,
+        };
+        match role {
+            TopologyNodeRole::Validator => Host::validator_from_ip(ip, identifier, ports),
+            TopologyNodeRole::Executor => Host::executor_from_ip(ip, identifier, ports),
         }
     }
 

@@ -985,10 +985,13 @@ dependencies = [
 [[package]]
 name = "cfgsync"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?branch=master#2f60a0372c228968c3526c341ebc7e58bbd178dd"
 dependencies = [
  "axum",
  "clap",
+ "groth16",
+ "hex",
+ "integration-configs",
+ "key-management-system",
  "nomos-core",
  "nomos-da-network-core",
  "nomos-executor",
@@ -1003,7 +1006,7 @@ dependencies = [
  "serde_path_to_error",
  "serde_with",
  "serde_yaml",
- "tests",
+ "subnetworks-assignations",
  "tokio",
  "tracing",
 ]
@@ -3125,6 +3128,7 @@ dependencies = [
  "nomos-wallet",
  "num-bigint",
  "rand 0.8.5",
+ "serde",
  "subnetworks-assignations",
  "time",
  "tracing",
@@ -6778,15 +6782,18 @@ dependencies = [
 [[package]]
 name = "services-utils"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?branch=master#2f60a0372c228968c3526c341ebc7e58bbd178dd"
 dependencies = [
  "async-trait",
+ "bincode",
  "futures",
+ "hex",
  "log",
  "overwatch",
+ "overwatch-derive",
  "serde",
  "serde_json",
  "thiserror 1.0.69",
+ "tokio",
  "tracing",
 ]
 
