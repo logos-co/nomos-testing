@@ -15,6 +15,10 @@ TARGET_ARCH="$(uname -m)"
 CIRCUITS_DIR="$1"
 RAPIDSNARK_REPO="${RAPIDSNARK_REPO:-https://github.com/iden3/rapidsnark.git}"
 RAPIDSNARK_REF="${RAPIDSNARK_REF:-main}"
+FORCE_REBUILD="${RAPIDSNARK_FORCE_REBUILD:-0}"
+BUILD_DIR=""
+PACKAGE_DIR=""
+CMAKE_TARGET_PLATFORM=""
 
 if [ ! -d "$CIRCUITS_DIR" ]; then
     echo "circuits directory '$CIRCUITS_DIR' does not exist" >&2
@@ -22,25 +26,43 @@ if [ ! -d "$CIRCUITS_DIR" ]; then
 fi
 
 system_gmp_package() {
-    local multiarch
-    multiarch="$(gcc -print-multiarch 2>/dev/null || echo aarch64-linux-gnu)"
+    local multiarch arch
+    arch="${1:-${TARGET_ARCH}}"
+    multiarch="$(gcc -print-multiarch 2>/dev/null || echo "${arch}-linux-gnu")"
     local lib_path="/usr/lib/${multiarch}/libgmp.a"
     if [ ! -f "$lib_path" ]; then
         echo "system libgmp.a not found at $lib_path" >&2
         return 1
     fi
-    mkdir -p depends/gmp/package_aarch64/lib depends/gmp/package_aarch64/include
-    cp "$lib_path" depends/gmp/package_aarch64/lib/
+    mkdir -p "depends/gmp/package_${arch}/lib" "depends/gmp/package_${arch}/include"
+    cp "$lib_path" "depends/gmp/package_${arch}/lib/"
     # Headers are small; copy the public ones the build expects.
-    cp /usr/include/gmp*.h depends/gmp/package_aarch64/include/ || true
+    cp /usr/include/gmp*.h "depends/gmp/package_${arch}/include/" || true
 }
 
 case "$TARGET_ARCH" in
     arm64 | aarch64)
+        CMAKE_TARGET_PLATFORM="aarch64"
+        BUILD_DIR="build_prover_arm64"
+        PACKAGE_DIR="${RAPIDSNARK_PACKAGE_DIR:-package_arm64}"
+        ;;
+    x86_64)
+        if [ "$FORCE_REBUILD" != "1" ]; then
+            echo "rapidsnark rebuild skipped for architecture '$TARGET_ARCH' (set RAPIDSNARK_FORCE_REBUILD=1 to override)" >&2
+            exit 0
+        fi
+        CMAKE_TARGET_PLATFORM="x86_64"
+        BUILD_DIR="build_prover_x86_64"
+        PACKAGE_DIR="${RAPIDSNARK_PACKAGE_DIR:-package_x86_64}"
         ;;
     *)
-        echo "rapidsnark rebuild skipped for architecture '$TARGET_ARCH'" >&2
-        exit 0
+        if [ "$FORCE_REBUILD" != "1" ]; then
+            echo "rapidsnark rebuild skipped for unsupported architecture '$TARGET_ARCH'" >&2
+            exit 0
+        fi
+        CMAKE_TARGET_PLATFORM="$TARGET_ARCH"
+        BUILD_DIR="build_prover_${TARGET_ARCH}"
+        PACKAGE_DIR="${RAPIDSNARK_PACKAGE_DIR:-package_${TARGET_ARCH}}"
         ;;
 esac
 
@@ -53,20 +75,26 @@ cd "$workdir/rapidsnark"
 git submodule update --init --recursive >&2
 
 if [ "${RAPIDSNARK_BUILD_GMP:-1}" = "1" ]; then
-    GMP_TARGET="${RAPIDSNARK_GMP_TARGET:-aarch64}"
+    if [ -z "${RAPIDSNARK_GMP_TARGET:-}" ]; then
+        if [ "$CMAKE_TARGET_PLATFORM" = "x86_64" ]; then
+            GMP_TARGET="host"
+        else
+            GMP_TARGET="$CMAKE_TARGET_PLATFORM"
+        fi
+    else
+        GMP_TARGET="$RAPIDSNARK_GMP_TARGET"
+    fi
     ./build_gmp.sh "$GMP_TARGET" >&2
 else
     echo "Using system libgmp to satisfy rapidsnark dependencies" >&2
-    system_gmp_package
+    system_gmp_package "$CMAKE_TARGET_PLATFORM"
 fi
 
-PACKAGE_DIR="${RAPIDSNARK_PACKAGE_DIR:-package_arm64}"
-
-rm -rf build_prover_arm64
-mkdir build_prover_arm64
-cd build_prover_arm64
+rm -rf "$BUILD_DIR"
+mkdir "$BUILD_DIR"
+cd "$BUILD_DIR"
 cmake .. \
-    -DTARGET_PLATFORM=aarch64 \
+    -DTARGET_PLATFORM="$CMAKE_TARGET_PLATFORM" \
     -DCMAKE_BUILD_TYPE=Release \
     -DCMAKE_INSTALL_PREFIX="../${PACKAGE_DIR}" \
     -DBUILD_SHARED_LIBS=OFF >&2

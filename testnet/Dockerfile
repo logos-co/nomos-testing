@@ -82,6 +82,8 @@ LABEL maintainer="augustinas@status.im" \
 
 RUN apt-get update && apt-get install -yq \
     libstdc++6 \
+    libgmp10 \
+    libgomp1 \
     libssl3 \
     ca-certificates \
     && rm -rf /var/lib/apt/lists/*
