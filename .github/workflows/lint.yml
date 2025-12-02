@@ -232,6 +232,8 @@ jobs:
           sudo cp "${BIN_DIR}/nomos-executor" /usr/local/bin/
           sudo cp "${BIN_DIR}/nomos-cli" /usr/local/bin/
           sudo chmod +x /usr/local/bin/nomos-node /usr/local/bin/nomos-executor /usr/local/bin/nomos-cli
+          echo "NOMOS_NODE_BIN=/usr/local/bin/nomos-node" >> "$GITHUB_ENV"
+          echo "NOMOS_EXECUTOR_BIN=/usr/local/bin/nomos-executor" >> "$GITHUB_ENV"
       - name: Run local runner smoke (ignored test)
         run: |
           cargo +nightly-2025-09-14 test -p runner-examples --test local_runner_bin_smoke -- --ignored --nocapture
