@@ -25,9 +25,27 @@ use crate::secret_key_to_peer_id;
 
 pub static GLOBAL_PARAMS_PATH: LazyLock<String> = LazyLock::new(resolve_global_params_path);
 
+fn canonicalize_params_path(mut path: PathBuf) -> PathBuf {
+    if path.is_dir() {
+        let candidates = [
+            path.join("pol/proving_key.zkey"),
+            path.join("proving_key.zkey"),
+        ];
+        if let Some(file) = candidates.iter().find(|p| p.is_file()) {
+            return file.clone();
+        }
+    }
+    if let Ok(resolved) = path.canonicalize() {
+        path = resolved;
+    }
+    path
+}
+
 fn resolve_global_params_path() -> String {
     if let Ok(path) = env::var("NOMOS_KZGRS_PARAMS_PATH") {
-        return path;
+        return canonicalize_params_path(PathBuf::from(path))
+            .to_string_lossy()
+            .to_string();
     }
 
     let workspace_root = env::var("CARGO_WORKSPACE_DIR")
@@ -41,7 +59,9 @@ fn resolve_global_params_path() -> String {
         })
         .unwrap_or_else(|| PathBuf::from(env!("CARGO_MANIFEST_DIR")));
 
-    let params_path = workspace_root.join("testing-framework/assets/stack/kzgrs_test_params");
+    let params_path = canonicalize_params_path(
+        workspace_root.join("testing-framework/assets/stack/kzgrs_test_params"),
+    );
     match params_path.canonicalize() {
         Ok(path) => path.to_string_lossy().to_string(),
         Err(err) => {
