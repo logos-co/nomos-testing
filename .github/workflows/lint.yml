@@ -198,6 +198,10 @@ jobs:
       - name: Prepare workspace tmpdir
         run: mkdir -p "$TMPDIR"
 
+      - name: Prune docker to free space
+        run: |
+          docker system prune -af --volumes || true
+
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@master
         with:

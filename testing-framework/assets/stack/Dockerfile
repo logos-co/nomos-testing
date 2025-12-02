@@ -76,6 +76,8 @@ RUN mkdir -p /opt/circuits && \
 ENV NOMOS_CIRCUITS=/opt/circuits
 ENV CARGO_TARGET_DIR=/tmp/target
 ENV CARGO_INCREMENTAL=0
+ENV CARGO_PROFILE_DEV_DEBUG=0
+ENV RUSTFLAGS="-C debuginfo=0"
 
 # Fetch the nomos-node sources pinned in Cargo.lock and build the runtime binaries.
 RUN if [ ! -d /workspace/nomos-node ]; then \
