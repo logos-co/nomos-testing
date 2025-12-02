@@ -74,33 +74,18 @@ RUN mkdir -p /opt/circuits && \
     fi
 
 ENV NOMOS_CIRCUITS=/opt/circuits
-ENV CARGO_TARGET_DIR=/tmp/target
-ENV CARGO_INCREMENTAL=0
-ENV CARGO_PROFILE_DEV_DEBUG=0
-ENV RUSTFLAGS="-C debuginfo=0"
 
-# Fetch the nomos-node sources pinned in Cargo.lock and build the runtime binaries.
-RUN if [ ! -d /workspace/nomos-node ]; then \
-      git clone https://github.com/logos-co/nomos-node.git /workspace/nomos-node; \
-    fi && \
-    cd /workspace/nomos-node && \
-    git fetch --depth 1 origin 2f60a0372c228968c3526c341ebc7e58bbd178dd && \
-    git checkout 2f60a0372c228968c3526c341ebc7e58bbd178dd && \
-    git reset --hard && git clean -fdx && \
-    cargo build --all-features --bins && \
-    rm -rf ${CARGO_TARGET_DIR}/debug/incremental
+# Copy prebuilt runtime binaries (provided by CI) into the build context.
+RUN mkdir -p /workspace/artifacts
+COPY testing-framework/assets/stack/bin/nomos-node /workspace/artifacts/nomos-node
+COPY testing-framework/assets/stack/bin/nomos-executor /workspace/artifacts/nomos-executor
+COPY testing-framework/assets/stack/bin/nomos-cli /workspace/artifacts/nomos-cli
 
 # Build cfgsync binaries from this workspace.
 RUN cargo build --all-features --manifest-path /workspace/testing-framework/tools/cfgsync/Cargo.toml --bins
-
-# Collect only the binaries and drop the build directory to keep layers small.
-RUN mkdir -p /workspace/artifacts && \
-    cp ${CARGO_TARGET_DIR}/debug/nomos-node /workspace/artifacts/ && \
-    cp ${CARGO_TARGET_DIR}/debug/nomos-executor /workspace/artifacts/ && \
-    cp ${CARGO_TARGET_DIR}/debug/nomos-cli /workspace/artifacts/ && \
-    cp ${CARGO_TARGET_DIR}/debug/cfgsync-server /workspace/artifacts/ && \
-    cp ${CARGO_TARGET_DIR}/debug/cfgsync-client /workspace/artifacts/ && \
-    rm -rf ${CARGO_TARGET_DIR}
+RUN cp /workspace/target/debug/cfgsync-server /workspace/artifacts/cfgsync-server && \
+    cp /workspace/target/debug/cfgsync-client /workspace/artifacts/cfgsync-client && \
+    rm -rf /workspace/target/debug/incremental
 
 # ===========================
 # NODE IMAGE

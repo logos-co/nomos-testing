@@ -13,6 +13,60 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  nomos_binaries:
+    runs-on: ubuntu-latest
+    env:
+      NOMOS_CIRCUITS: ${{ github.workspace }}/.tmp/nomos-circuits
+      CARGO_INCREMENTAL: 0
+      CARGO_PROFILE_DEV_DEBUG: 0
+      RUSTFLAGS: -C debuginfo=0
+      CARGO_TARGET_DIR: ${{ github.workspace }}/.tmp/nomos-target
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install system dependencies
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install -y clang llvm-dev libclang-dev pkg-config cmake libssl-dev rsync libgmp10 libgmp-dev libgomp1 nasm
+      - name: Install nomos circuits
+        run: |
+          ./scripts/setup-nomos-circuits.sh v0.3.1 "$NOMOS_CIRCUITS"
+          echo "NOMOS_CIRCUITS=$NOMOS_CIRCUITS" >> "$GITHUB_ENV"
+      - uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: nightly-2025-09-14
+      - uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          restore-keys: ${{ runner.os }}-cargo-
+      - name: Build nomos binaries
+        run: |
+          SRC_DIR="${GITHUB_WORKSPACE}/.tmp/nomos-node-src"
+          mkdir -p "$SRC_DIR"
+          if [ ! -d "$SRC_DIR/.git" ]; then
+            git clone https://github.com/logos-co/nomos-node.git "$SRC_DIR"
+          fi
+          cd "$SRC_DIR"
+          git fetch --depth 1 origin 2f60a0372c228968c3526c341ebc7e58bbd178dd
+          git checkout 2f60a0372c228968c3526c341ebc7e58bbd178dd
+          git reset --hard
+          git clean -fdx
+          cargo +nightly-2025-09-14 build --all-features -p nomos-node -p nomos-executor -p nomos-cli
+      - name: Package binaries
+        run: |
+          mkdir -p artifacts
+          cp "${CARGO_TARGET_DIR}/debug/nomos-node" artifacts/
+          cp "${CARGO_TARGET_DIR}/debug/nomos-executor" artifacts/
+          cp "${CARGO_TARGET_DIR}/debug/nomos-cli" artifacts/
+          tar -czf nomos-binaries.tar.gz -C artifacts .
+      - uses: actions/upload-artifact@v4
+        with:
+          name: nomos-binaries-linux-amd64
+          path: nomos-binaries.tar.gz
+
   fmt:
     runs-on: ubuntu-latest
     steps:
@@ -124,6 +178,7 @@ jobs:
       - run: cargo machete
 
   local_smoke:
+    needs: nomos_binaries
     runs-on: ubuntu-latest
     env:
       POL_PROOF_DEV_MODE: true
@@ -164,31 +219,24 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
-      - name: Build local binaries (nomos-node/executor)
+      - name: Download prebuilt nomos binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: nomos-binaries-linux-amd64
+          path: ${TMPDIR}/nomos-binaries
+      - name: Install nomos binaries
         run: |
-          SRC_DIR="${TMPDIR:-/tmp}/nomos-node-src"
-          mkdir -p "$SRC_DIR"
-          if [ ! -d "$SRC_DIR/.git" ]; then
-            git clone https://github.com/logos-co/nomos-node.git "$SRC_DIR"
-          else
-            cd "$SRC_DIR"
-            git fetch --depth 1 origin 2f60a0372c228968c3526c341ebc7e58bbd178dd
-            git checkout 2f60a0372c228968c3526c341ebc7e58bbd178dd
-            git reset --hard
-            git clean -fdx
-            cd -
-          fi
-          cd "$SRC_DIR"
-          git fetch --depth 1 origin 2f60a0372c228968c3526c341ebc7e58bbd178dd
-          git checkout 2f60a0372c228968c3526c341ebc7e58bbd178dd
-          git reset --hard
-          git clean -fdx
-          cargo +nightly-2025-09-14 build --all-features -p nomos-node -p nomos-executor
+          tar -xzf "${TMPDIR}/nomos-binaries/nomos-binaries.tar.gz" -C "${TMPDIR}/nomos-binaries"
+          sudo cp "${TMPDIR}/nomos-binaries/nomos-node" /usr/local/bin/
+          sudo cp "${TMPDIR}/nomos-binaries/nomos-executor" /usr/local/bin/
+          sudo cp "${TMPDIR}/nomos-binaries/nomos-cli" /usr/local/bin/
+          sudo chmod +x /usr/local/bin/nomos-node /usr/local/bin/nomos-executor /usr/local/bin/nomos-cli
       - name: Run local runner smoke (ignored test)
         run: |
           cargo +nightly-2025-09-14 test -p runner-examples --test local_runner_bin_smoke -- --ignored --nocapture
 
   compose_smoke:
+    needs: nomos_binaries
     runs-on: ubuntu-latest
     env:
       TMPDIR: ${{ github.workspace }}/.tmp
@@ -201,6 +249,12 @@ jobs:
 
       - name: Prepare workspace tmpdir
         run: mkdir -p "$TMPDIR"
+
+      - name: Download prebuilt nomos binaries
+        uses: actions/download-artifact@v4
+        with:
+          name: nomos-binaries-linux-amd64
+          path: testing-framework/assets/stack/bin
 
       - name: Prune docker to free space
         run: |
