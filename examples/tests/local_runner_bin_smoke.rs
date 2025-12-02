@@ -7,7 +7,7 @@ use std::process::Command;
 #[test]
 #[ignore = "runs local_runner binary (~2min) and requires local assets/binaries"]
 fn local_runner_bin_smoke() {
-    let status = Command::new("cargo")
+    let output = Command::new("cargo")
         .args([
             "run",
             "-p",
@@ -21,8 +21,16 @@ fn local_runner_bin_smoke() {
         .env("LOCAL_DEMO_RUN_SECS", "120")
         .env("LOCAL_DEMO_VALIDATORS", "1")
         .env("LOCAL_DEMO_EXECUTORS", "1")
-        .status()
+        .env("RUST_BACKTRACE", "1")
+        .output()
         .expect("failed to spawn cargo run");
 
-    assert!(status.success(), "local runner binary exited with {status}");
+    if !output.status.success() {
+        panic!(
+            "local runner binary failed: status={}\nstdout:\n{}\nstderr:\n{}",
+            output.status,
+            String::from_utf8_lossy(&output.stdout),
+            String::from_utf8_lossy(&output.stderr),
+        );
+    }
 }

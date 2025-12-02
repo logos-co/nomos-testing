@@ -136,48 +136,9 @@ async fn aggressive_chaos_test() -> Result<(), Box<dyn std::error::Error + Send 
 
 These scenarios require custom implementations but demonstrate framework extensibility:
 
-### Network Partition Recovery
+### Mempool & Transaction Handling
 
-**Concept:** Test consensus recovery after network partitions.
-
-**Requirements:**
-- Needs `block_peer()` / `unblock_peer()` methods in `NodeControlHandle`
-- Partition subsets of validators, wait, then restore connectivity
-- Verify chain convergence after partition heals
-
-**Why useful:** Tests the most realistic failure mode in distributed systems.
-
-**Current blocker:** Node control doesn't yet support network-level actions (only process restarts).
-
-### Block Timing Consistency
-
-**Concept:** Verify block production intervals stay within expected bounds.
-
-**Implementation approach:**
-- Custom expectation that consumes `BlockFeed`
-- Collect block timestamps during run
-- Assert intervals are within `(slot_duration * active_slot_coeff) ± tolerance`
-
-**Why useful:** Validates consensus timing under various loads.
-
-### Invalid Transaction Fuzzing
-
-**Concept:** Submit malformed transactions and verify they're rejected properly.
-
-**Implementation approach:**
-- Custom workload that generates invalid transactions (bad signatures, insufficient funds, malformed structure)
-- Expectation verifies mempool rejects them and they never appear in blocks
-- Test mempool resilience and filtering
-
-**Why useful:** Ensures mempool doesn't crash or include invalid transactions under fuzzing.
-
-### Wallet Balance Verification
-
-**Concept:** Track wallet balances and verify state consistency.
-
-**Description:** After transaction workload completes, query all wallet balances via node API and verify total supply is conserved. Requires tracking initial state, submitted transactions, and final balances. Validates that the ledger maintains correctness under load (no funds lost or created). This is a **state assertion** expectation that checks correctness, not just liveness.
-
-### Transaction Propagation & Inclusion Test
+#### Transaction Propagation & Inclusion Test
 
 **Concept:** Submit the same batch of independent transactions to different nodes in randomized order/offsets, then verify all transactions are included and final state matches across nodes.
 
@@ -189,7 +150,7 @@ These scenarios require custom implementations but demonstrate framework extensi
 
 **Implementation notes:** Requires both a custom `Workload` implementation (to submit same transactions to multiple nodes with jitter) and a custom `Expectation` implementation (to verify inclusion and state consistency).
 
-### Cross-Validator Mempool Divergence & Convergence
+#### Cross-Validator Mempool Divergence & Convergence
 
 **Concept:** Drive different transaction subsets into different validators (or differing arrival orders) to create temporary mempool divergence, then verify mempools/blocks converge to contain the union (no permanent divergence).
 
@@ -208,7 +169,7 @@ These scenarios require custom implementations but demonstrate framework extensi
 
 **Implementation notes:** Requires both a custom `Workload` implementation (to inject disjoint/jittered batches per node) and a custom `Expectation` implementation (to verify mempool convergence or block inclusion). Uses existing `ctx.node_clients()` capability—no new infrastructure needed.
 
-### Adaptive Mempool Pressure Test
+#### Adaptive Mempool Pressure Test
 
 **Concept:** Ramp transaction load over time to observe mempool growth, fee prioritization/eviction, and block saturation behavior, detecting performance regressions and ensuring backpressure/eviction work under increasing load.
 
@@ -228,26 +189,20 @@ These scenarios require custom implementations but demonstrate framework extensi
 
 **Implementation notes:** Can be built with current workload model (ramping rate). Requires custom `Expectation` implementation that reads mempool metrics (via node HTTP APIs or Prometheus) and monitors throughput to judge behavior. No new infrastructure needed—uses existing observability capabilities.
 
-### API DoS/Stress Test
+#### Invalid Transaction Fuzzing
 
-**Concept:** Adversarial workload floods node HTTP/WS APIs with high QPS and malformed/bursty requests; expectation checks nodes remain responsive or rate-limit without harming consensus.
+**Concept:** Submit malformed transactions and verify they're rejected properly.
 
-**Requirements:**
-- **Custom workload:** Targets node HTTP/WS API endpoints with mixed valid/invalid requests at high rate
-- **Custom expectation:** Monitors error rates, latency, and confirms block production/liveness unaffected
-- Run alongside normal workloads (transactions/block production)
+**Implementation approach:**
+- Custom workload that generates invalid transactions (bad signatures, insufficient funds, malformed structure)
+- Expectation verifies mempool rejects them and they never appear in blocks
+- Test mempool resilience and filtering
 
-**Expectations:**
-- Nodes remain responsive or correctly rate-limit under API flood
-- Error rates/latency are acceptable (rate limiting works)
-- Block production/liveness unaffected by API abuse
-- Consensus continues normally despite API stress
+**Why useful:** Ensures mempool doesn't crash or include invalid transactions under fuzzing.
 
-**Why useful:** Validates API hardening under abuse and ensures control/telemetry endpoints don't destabilize the node. Tests that API abuse is properly isolated from consensus operations, preventing DoS attacks on API endpoints from affecting blockchain functionality.
+### Network & Gossip
 
-**Implementation notes:** Requires custom `Workload` implementation that directs high-QPS traffic to node APIs (via `ctx.node_clients()` or direct HTTP clients) and custom `Expectation` implementation that monitors API responsiveness metrics and consensus liveness. Uses existing node API access—no new infrastructure needed.
-
-### Gossip Latency Gradient Scenario
+#### Gossip Latency Gradient Scenario
 
 **Concept:** Test consensus robustness under skewed gossip delays by partitioning nodes into latency tiers (tier A ≈10ms, tier B ≈100ms, tier C ≈300ms) and observing propagation lag, fork rate, and eventual convergence.
 
@@ -266,25 +221,7 @@ These scenarios require custom implementations but demonstrate framework extensi
 
 **Current blocker:** Runner support for per-group delay injection (network delay via `netem`/`iptables`) is not present today. Would require new chaos plumbing in compose/k8s deployers to inject network delays per node group.
 
-### Time-Shifted Blocks (Clock Skew Test)
-
-**Concept:** Test consensus and timestamp handling when nodes run with skewed clocks (e.g., +1s, −1s, +200ms jitter) to surface timestamp validation issues, reorg sensitivity, and clock drift handling.
-
-**Requirements:**
-- Assign per-node time offsets (e.g., +1s, −1s, +200ms jitter)
-- Run normal workload (transactions/block production)
-- Observe whether blocks are accepted/propagated and the chain stays consistent
-
-**Expectations:**
-- Blocks with skewed timestamps are handled correctly (accepted or rejected per protocol rules)
-- Chain remains consistent across nodes despite clock differences
-- No unexpected reorgs or chain splits due to timestamp validation issues
-
-**Why useful:** Clock skew is a common real-world issue in distributed systems. This validates that consensus correctly handles timestamp validation and maintains safety/liveness when nodes have different clock offsets, preventing timestamp-based attacks or failures.
-
-**Current blocker:** Runner ability to skew per-node clocks (e.g., privileged containers with `libfaketime`/`chrony` or time-offset netns) is not available today. Would require a new chaos/time-skew hook in deployers to inject clock offsets per node.
-
-### Byzantine Gossip Flooding (libp2p Peer)
+#### Byzantine Gossip Flooding (libp2p Peer)
 
 **Concept:** Spin up a custom workload/sidecar that runs a libp2p host, joins the cluster's gossip mesh, and publishes a high rate of syntactically valid but useless/stale messages to selected topics, testing gossip backpressure, scoring, and queue handling under a "malicious" peer.
 
@@ -304,7 +241,53 @@ These scenarios require custom implementations but demonstrate framework extensi
 
 **Current blocker:** Requires adding gossip-capable helper (libp2p integration) to the framework. Would need a custom workload/sidecar implementation that can join the gossip mesh and inject messages. The rest of the scenario can use existing runners/workloads.
 
-### Dynamic Topology (Churn) Scenario
+#### Network Partition Recovery
+
+**Concept:** Test consensus recovery after network partitions.
+
+**Requirements:**
+- Needs `block_peer()` / `unblock_peer()` methods in `NodeControlHandle`
+- Partition subsets of validators, wait, then restore connectivity
+- Verify chain convergence after partition heals
+
+**Why useful:** Tests the most realistic failure mode in distributed systems.
+
+**Current blocker:** Node control doesn't yet support network-level actions (only process restarts).
+
+### Time & Timing
+
+#### Time-Shifted Blocks (Clock Skew Test)
+
+**Concept:** Test consensus and timestamp handling when nodes run with skewed clocks (e.g., +1s, −1s, +200ms jitter) to surface timestamp validation issues, reorg sensitivity, and clock drift handling.
+
+**Requirements:**
+- Assign per-node time offsets (e.g., +1s, −1s, +200ms jitter)
+- Run normal workload (transactions/block production)
+- Observe whether blocks are accepted/propagated and the chain stays consistent
+
+**Expectations:**
+- Blocks with skewed timestamps are handled correctly (accepted or rejected per protocol rules)
+- Chain remains consistent across nodes despite clock differences
+- No unexpected reorgs or chain splits due to timestamp validation issues
+
+**Why useful:** Clock skew is a common real-world issue in distributed systems. This validates that consensus correctly handles timestamp validation and maintains safety/liveness when nodes have different clock offsets, preventing timestamp-based attacks or failures.
+
+**Current blocker:** Runner ability to skew per-node clocks (e.g., privileged containers with `libfaketime`/`chrony` or time-offset netns) is not available today. Would require a new chaos/time-skew hook in deployers to inject clock offsets per node.
+
+#### Block Timing Consistency
+
+**Concept:** Verify block production intervals stay within expected bounds.
+
+**Implementation approach:**
+- Custom expectation that consumes `BlockFeed`
+- Collect block timestamps during run
+- Assert intervals are within `(slot_duration * active_slot_coeff) ± tolerance`
+
+**Why useful:** Validates consensus timing under various loads.
+
+### Topology & Membership
+
+#### Dynamic Topology (Churn) Scenario
 
 **Concept:** Nodes join and leave mid-run (new identities/addresses added; some nodes permanently removed) to exercise peer discovery, bootstrapping, reputation, and load balancing under churn.
 
@@ -324,3 +307,32 @@ These scenarios require custom implementations but demonstrate framework extensi
 **Why useful:** Real networks experience churn (nodes joining/leaving). Unlike restarts (which preserve topology), churn changes the actual topology size and peer set, testing how the protocol handles dynamic membership. This exercises peer discovery, bootstrapping, reputation systems, and load balancing under realistic conditions.
 
 **Current blocker:** Runner support for dynamic node addition/removal at runtime is not available today. Chaos today only restarts existing nodes; churn would require the ability to spin up new nodes with fresh identities/addresses, update peer lists/bootstraps dynamically, and permanently remove nodes. Would need new topology management capabilities in deployers.
+
+### API & External Interfaces
+
+#### API DoS/Stress Test
+
+**Concept:** Adversarial workload floods node HTTP/WS APIs with high QPS and malformed/bursty requests; expectation checks nodes remain responsive or rate-limit without harming consensus.
+
+**Requirements:**
+- **Custom workload:** Targets node HTTP/WS API endpoints with mixed valid/invalid requests at high rate
+- **Custom expectation:** Monitors error rates, latency, and confirms block production/liveness unaffected
+- Run alongside normal workloads (transactions/block production)
+
+**Expectations:**
+- Nodes remain responsive or correctly rate-limit under API flood
+- Error rates/latency are acceptable (rate limiting works)
+- Block production/liveness unaffected by API abuse
+- Consensus continues normally despite API stress
+
+**Why useful:** Validates API hardening under abuse and ensures control/telemetry endpoints don't destabilize the node. Tests that API abuse is properly isolated from consensus operations, preventing DoS attacks on API endpoints from affecting blockchain functionality.
+
+**Implementation notes:** Requires custom `Workload` implementation that directs high-QPS traffic to node APIs (via `ctx.node_clients()` or direct HTTP clients) and custom `Expectation` implementation that monitors API responsiveness metrics and consensus liveness. Uses existing node API access—no new infrastructure needed.
+
+### State & Correctness
+
+#### Wallet Balance Verification
+
+**Concept:** Track wallet balances and verify state consistency.
+
+**Description:** After transaction workload completes, query all wallet balances via node API and verify total supply is conserved. Requires tracking initial state, submitted transactions, and final balances. Validates that the ledger maintains correctness under load (no funds lost or created). This is a **state assertion** expectation that checks correctness, not just liveness.
