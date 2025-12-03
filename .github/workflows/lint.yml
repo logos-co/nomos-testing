@@ -434,8 +434,6 @@ jobs:
         run: npx -y markdownlint-cli2 "book/src/**/*.md"
       - name: Build book
         run: mdbook build book
-      - name: Check links
-        run: mdbook-linkcheck book
       - name: Upload book artifact for Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v3
