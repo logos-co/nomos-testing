@@ -178,7 +178,9 @@ main() {
     # Check existing installation
     check_existing_installation
 
-    # Download and extract (retry with x86_64 bundle on aarch64 if needed)
+    local rebuild_required="${NOMOS_CIRCUITS_REBUILD_RAPIDSNARK:-0}"
+
+    # Download and extract (with fallbacks)
     if ! download_release "$platform"; then
         if [[ "$platform" == linux-aarch64 ]]; then
             print_warning "Falling back to linux-x86_64 circuits bundle; will rebuild prover for aarch64."
@@ -186,6 +188,18 @@ main() {
             if ! download_release "linux-x86_64"; then
                 exit 1
             fi
+            rebuild_required=1
+        elif [[ "$platform" == macos-x86_64 ]]; then
+            print_warning "No macOS x86_64 bundle; falling back to macOS aarch64 circuits bundle and rebuilding prover."
+            rm -rf "$INSTALL_DIR"
+            if ! download_release "macos-aarch64"; then
+                print_warning "macOS aarch64 bundle unavailable; trying linux-x86_64 bundle and rebuilding prover."
+                rm -rf "$INSTALL_DIR"
+                if ! download_release "linux-x86_64"; then
+                    exit 1
+                fi
+            fi
+            rebuild_required=1
         else
             exit 1
         fi
@@ -197,7 +211,7 @@ main() {
         handle_macos_quarantine
     fi
 
-    if [[ "${NOMOS_CIRCUITS_REBUILD_RAPIDSNARK:-0}" == "1" || "$platform" == *"aarch64" ]]; then
+    if [[ "$rebuild_required" == "1" || "$platform" == *"aarch64" ]]; then
         echo
         print_info "Rebuilding rapidsnark prover for ${platform}..."
         "${SCRIPT_DIR}/build-rapidsnark.sh" "$INSTALL_DIR"
