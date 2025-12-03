@@ -18,7 +18,6 @@ jobs:
       - self-hosted
       - macOS
       - X64
-      - MacBook-Pro-6
     env:
       NOMOS_CIRCUITS: ${{ github.workspace }}/.tmp/nomos-circuits
       CARGO_INCREMENTAL: 0
@@ -263,7 +262,6 @@ jobs:
       - self-hosted
       - macOS
       - X64
-      - MacBook-Pro-6
     env:
       POL_PROOF_DEV_MODE: true
       LOCAL_DEMO_RUN_SECS: 120
