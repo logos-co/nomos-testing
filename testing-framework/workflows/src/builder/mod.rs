@@ -35,8 +35,18 @@ non_zero_rate_fn!(blob_rate_checked, "blob rate must be non-zero");
 pub trait ScenarioBuilderExt<Caps>: Sized {
     /// Configure a transaction flow workload.
     fn transactions(self) -> TransactionFlowBuilder<Caps>;
+    /// Configure a transaction flow workload via closure.
+    fn transactions_with(
+        self,
+        f: impl FnOnce(TransactionFlowBuilder<Caps>) -> TransactionFlowBuilder<Caps>,
+    ) -> CoreScenarioBuilder<Caps>;
     /// Configure a data-availability workload.
     fn da(self) -> DataAvailabilityFlowBuilder<Caps>;
+    /// Configure a data-availability workload via closure.
+    fn da_with(
+        self,
+        f: impl FnOnce(DataAvailabilityFlowBuilder<Caps>) -> DataAvailabilityFlowBuilder<Caps>,
+    ) -> CoreScenarioBuilder<Caps>;
     #[must_use]
     /// Attach a consensus liveness expectation.
     fn expect_consensus_liveness(self) -> Self;
@@ -50,8 +60,22 @@ impl<Caps> ScenarioBuilderExt<Caps> for CoreScenarioBuilder<Caps> {
         TransactionFlowBuilder::new(self)
     }
 
+    fn transactions_with(
+        self,
+        f: impl FnOnce(TransactionFlowBuilder<Caps>) -> TransactionFlowBuilder<Caps>,
+    ) -> CoreScenarioBuilder<Caps> {
+        f(self.transactions()).apply()
+    }
+
     fn da(self) -> DataAvailabilityFlowBuilder<Caps> {
         DataAvailabilityFlowBuilder::new(self)
+    }
+
+    fn da_with(
+        self,
+        f: impl FnOnce(DataAvailabilityFlowBuilder<Caps>) -> DataAvailabilityFlowBuilder<Caps>,
+    ) -> CoreScenarioBuilder<Caps> {
+        f(self.da()).apply()
     }
 
     fn expect_consensus_liveness(self) -> Self {
@@ -185,11 +209,23 @@ impl<Caps> DataAvailabilityFlowBuilder<Caps> {
 pub trait ChaosBuilderExt: Sized {
     /// Entry point into chaos workloads.
     fn chaos(self) -> ChaosBuilder;
+    /// Configure chaos via closure.
+    fn chaos_with(
+        self,
+        f: impl FnOnce(ChaosBuilder) -> CoreScenarioBuilder<NodeControlCapability>,
+    ) -> CoreScenarioBuilder<NodeControlCapability>;
 }
 
 impl ChaosBuilderExt for CoreScenarioBuilder<NodeControlCapability> {
     fn chaos(self) -> ChaosBuilder {
         ChaosBuilder { builder: self }
+    }
+
+    fn chaos_with(
+        self,
+        f: impl FnOnce(ChaosBuilder) -> CoreScenarioBuilder<NodeControlCapability>,
+    ) -> CoreScenarioBuilder<NodeControlCapability> {
+        f(self.chaos())
     }
 }
 
@@ -202,6 +238,12 @@ pub struct ChaosBuilder {
 }
 
 impl ChaosBuilder {
+    /// Finish without adding a chaos workload.
+    #[must_use]
+    pub fn apply(self) -> CoreScenarioBuilder<NodeControlCapability> {
+        self.builder
+    }
+
     /// Configure a random restarts chaos workload.
     #[must_use]
     pub fn restart(self) -> ChaosRestartBuilder {

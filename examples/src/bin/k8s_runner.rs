@@ -45,14 +45,14 @@ async fn run_k8s_case(
             .executors(executors)
     })
         .wallets(TOTAL_WALLETS)
-        .transactions()
-            .rate(MIXED_TXS_PER_BLOCK)
-            .users(TRANSACTION_WALLETS)
-            .apply()
-        .da()
-            .channel_rate(1)
-            .blob_rate(1)
-            .apply()
+        .transactions_with(|txs| {
+            txs.rate(MIXED_TXS_PER_BLOCK)
+                .users(TRANSACTION_WALLETS)
+        })
+        .da_with(|da| {
+            da.channel_rate(1)
+                .blob_rate(1)
+        })
         .with_run_duration(run_duration)
         .expect_consensus_liveness()
         .build();

@@ -49,22 +49,23 @@ async fn run_compose_case(
             .executors(executors)
     })
         .enable_node_control()
-        .chaos()
-            .restart()
-            // Keep chaos restarts outside the test run window to avoid crash loops on restart.
-            .min_delay(Duration::from_secs(120))
-            .max_delay(Duration::from_secs(180))
-            .target_cooldown(Duration::from_secs(240))
-            .apply()
+        .chaos_with(|c| {
+            c.restart()
+                // Keep chaos restarts outside the test run window to avoid crash loops on restart.
+                .min_delay(Duration::from_secs(120))
+                .max_delay(Duration::from_secs(180))
+                .target_cooldown(Duration::from_secs(240))
+                .apply()
+        })
         .wallets(TOTAL_WALLETS)
-        .transactions()
-            .rate(MIXED_TXS_PER_BLOCK)
-            .users(TRANSACTION_WALLETS)
-            .apply()
-        .da()
-            .channel_rate(1)
-            .blob_rate(1)
-            .apply()
+        .transactions_with(|txs| {
+            txs.rate(MIXED_TXS_PER_BLOCK)
+                .users(TRANSACTION_WALLETS)
+        })
+        .da_with(|da| {
+            da.channel_rate(1)
+                .blob_rate(1)
+        })
         .with_run_duration(run_duration)
         .expect_consensus_liveness()
         .build();
