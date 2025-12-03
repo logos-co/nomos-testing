@@ -14,7 +14,11 @@ concurrency:
 
 jobs:
   nomos_binaries:
-    runs-on: ubuntu-latest
+    runs-on:
+      - self-hosted
+      - macOS
+      - X64
+      - MacBook-Pro-6
     env:
       NOMOS_CIRCUITS: ${{ github.workspace }}/.tmp/nomos-circuits
       CARGO_INCREMENTAL: 0
