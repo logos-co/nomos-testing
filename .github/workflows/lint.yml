@@ -149,6 +149,7 @@ jobs:
           echo "TMPDIR=${{ runner.temp }}" >> "$GITHUB_ENV"
           echo "CARGO_TARGET_DIR=${{ runner.temp }}/target-local" >> "$GITHUB_ENV"
           echo "NOMOS_LOG_DIR=${{ runner.temp }}/local-logs" >> "$GITHUB_ENV"
+          mkdir -p "${{ runner.temp }}/local-logs"
       - name: Install system dependencies (Linux)
         if: runner.os == 'Linux'
         run: |
@@ -223,14 +224,14 @@ jobs:
           rsync -a --delete "$NOMOS_CIRCUITS"/ testing-framework/assets/stack/kzgrs_test_params/ || true
       - name: Run local runner smoke (ignored test)
         run: |
-          cargo +nightly-2025-09-14 test -p runner-examples --test local_runner_bin_smoke -- --ignored --nocapture
+          NOMOS_TESTS_KEEP_LOGS=true cargo +nightly-2025-09-14 test -p runner-examples --test local_runner_bin_smoke -- --ignored --nocapture
       - name: Upload local smoke logs
         if: failure()
         uses: actions/upload-artifact@v4
         with:
           name: local-smoke-logs
           path: ${{ env.NOMOS_LOG_DIR }}
-          if-no-files-found: ignore
+          if-no-files-found: error
 
   compose_smoke:
     runs-on: ubuntu-latest
