@@ -198,7 +198,10 @@ jobs:
 
   local_smoke:
     needs: nomos_binaries
-    runs-on: ubuntu-latest
+    runs-on:
+      - self-hosted
+      - macOS
+      - X64
     env:
       POL_PROOF_DEV_MODE: true
       LOCAL_DEMO_RUN_SECS: 120
@@ -280,60 +283,6 @@ jobs:
       - self-hosted
       - macOS
       - X64
-    env:
-      POL_PROOF_DEV_MODE: true
-      LOCAL_DEMO_RUN_SECS: 120
-      LOCAL_DEMO_VALIDATORS: 1
-      LOCAL_DEMO_EXECUTORS: 1
-      CARGO_INCREMENTAL: 0
-      CARGO_PROFILE_DEV_DEBUG: 0
-      RUSTFLAGS: -C debuginfo=0
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set temp dir
-        run: |
-          echo "TMPDIR=${{ runner.temp }}" >> "$GITHUB_ENV"
-          echo "CARGO_TARGET_DIR=${{ runner.temp }}/target-local" >> "$GITHUB_ENV"
-          echo "NOMOS_CIRCUITS=${{ runner.temp }}/nomos-circuits" >> "$GITHUB_ENV"
-          echo "NOMOS_KZGRS_PARAMS_PATH=${{ runner.temp }}/nomos-circuits" >> "$GITHUB_ENV"
-          echo "NOMOS_LOG_DIR=${{ runner.temp }}/local-logs" >> "$GITHUB_ENV"
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2025-09-14
-      - name: Install nomos circuits
-        run: |
-          ./scripts/setup-nomos-circuits.sh v0.3.1 "$NOMOS_CIRCUITS"
-          echo "NOMOS_CIRCUITS=$NOMOS_CIRCUITS" >> "$GITHUB_ENV"
-      - name: Download nomos binaries
-        uses: actions/download-artifact@v4
-        with:
-          name: nomos-binaries-linux-amd64
-          path: ${{ runner.temp }}/nomos-binaries
-      - name: Install nomos binaries
-        run: |
-          BIN_DIR="${RUNNER_TEMP}/nomos-binaries"
-          tar -xzf "${BIN_DIR}/nomos-binaries.tar.gz" -C "${BIN_DIR}"
-          sudo cp "${BIN_DIR}/nomos-node" /usr/local/bin/
-          sudo cp "${BIN_DIR}/nomos-executor" /usr/local/bin/
-          sudo cp "${BIN_DIR}/nomos-cli" /usr/local/bin/
-          sudo chmod +x /usr/local/bin/nomos-node /usr/local/bin/nomos-executor /usr/local/bin/nomos-cli
-          echo "NOMOS_NODE_BIN=/usr/local/bin/nomos-node" >> "$GITHUB_ENV"
-          echo "NOMOS_EXECUTOR_BIN=/usr/local/bin/nomos-executor" >> "$GITHUB_ENV"
-      - name: Stage KZG params for local run
-        run: |
-          rm -rf testing-framework/assets/stack/kzgrs_test_params
-          mkdir -p testing-framework/assets/stack/kzgrs_test_params
-          rsync -a --delete "$NOMOS_CIRCUITS"/ testing-framework/assets/stack/kzgrs_test_params/ || true
-      - name: Run local runner smoke (mac self-hosted)
-        run: |
-          cargo +nightly-2025-09-14 test -p runner-examples --test local_runner_bin_smoke -- --ignored --nocapture
-      - name: Upload local smoke logs (mac)
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: local-smoke-logs-mac
-          path: ${{ env.NOMOS_LOG_DIR }}
-          if-no-files-found: ignore
 
   compose_smoke:
     needs: nomos_binaries
