@@ -177,11 +177,22 @@ jobs:
         with:
           path: ${{ runner.temp }}/nomos-binaries/nomos-binaries.tar.gz
           key: ${{ runner.os }}-nomos-binaries-${{ env.NOMOS_NODE_REV }}
-      - name: Fail if binaries cache missing
+      - name: Download nomos binaries artifact (fallback)
         if: steps.restore-nomos-bins.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_NAME: nomos-binaries-${{ runner.os }}-${{ env.NOMOS_NODE_REV }}
         run: |
-          echo "Nomos binaries cache missing. Run manual build-binaries workflow to publish cache." >&2
-          exit 1
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/nomos-binaries"
+          artifact_id=$(gh api -X GET "repos/${GITHUB_REPOSITORY}/actions/artifacts" --paginate -F per_page=100 \
+            --jq '.artifacts[] | select(.name=="'"${ARTIFACT_NAME}"'") | .id' | head -n1)
+          if [ -z "$artifact_id" ]; then
+            echo "Nomos binaries cache missing and artifact not found. Run manual build-binaries workflow." >&2
+            exit 1
+          fi
+          gh api -X GET "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "${RUNNER_TEMP}/nomos-binaries/artifact.zip"
+          unzip -o "${RUNNER_TEMP}/nomos-binaries/artifact.zip" -d "${RUNNER_TEMP}/nomos-binaries"
       - name: Install nomos binaries
         run: |
           BIN_DIR="${RUNNER_TEMP}/nomos-binaries"
@@ -233,11 +244,22 @@ jobs:
         with:
           path: ${{ runner.temp }}/nomos-binaries/nomos-binaries.tar.gz
           key: ${{ runner.os }}-nomos-binaries-${{ env.NOMOS_NODE_REV }}
-      - name: Fail if binaries cache missing
+      - name: Download nomos binaries artifact (fallback)
         if: steps.restore-nomos-bins-compose.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_NAME: nomos-binaries-${{ runner.os }}-${{ env.NOMOS_NODE_REV }}
         run: |
-          echo "Nomos binaries cache missing. Run manual build-binaries workflow to publish cache." >&2
-          exit 1
+          set -euo pipefail
+          mkdir -p "${RUNNER_TEMP}/nomos-binaries"
+          artifact_id=$(gh api -X GET "repos/${GITHUB_REPOSITORY}/actions/artifacts" --paginate -F per_page=100 \
+            --jq '.artifacts[] | select(.name=="'"${ARTIFACT_NAME}"'") | .id' | head -n1)
+          if [ -z "$artifact_id" ]; then
+            echo "Nomos binaries cache missing and artifact not found. Run manual build-binaries workflow." >&2
+            exit 1
+          fi
+          gh api -X GET "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "${RUNNER_TEMP}/nomos-binaries/artifact.zip"
+          unzip -o "${RUNNER_TEMP}/nomos-binaries/artifact.zip" -d "${RUNNER_TEMP}/nomos-binaries"
       - name: Stage nomos binaries into build context
         run: |
           BIN_DIR="${RUNNER_TEMP}/nomos-binaries"
