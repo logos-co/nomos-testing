@@ -45,20 +45,20 @@ These binaries use the framework API (`ScenarioBuilder`) to construct and execut
 Scenarios are defined using a fluent builder pattern:
 
 ```rust
-let mut plan = ScenarioBuilder::topology()
-        .network_star()      // Topology configuration
-        .validators(3)
-        .executors(2)
-        .apply()
+let mut plan = ScenarioBuilder::topology_with(|t| {
+        t.network_star()      // Topology configuration
+            .validators(3)
+            .executors(2)
+    })
     .wallets(50)             // Wallet seeding
-    .transactions()          // Transaction workload
-        .rate(5)
-        .users(20)
-        .apply()
-    .da()                    // DA workload
-        .channel_rate(1)
-        .blob_rate(2)
-        .apply()
+    .transactions_with(|txs| {
+        txs.rate(5)
+            .users(20)
+    })
+    .da_with(|da| {
+        da.channel_rate(1)
+            .blob_rate(2)
+    })
     .expect_consensus_liveness()  // Expectations
     .with_run_duration(Duration::from_secs(90))
     .build();

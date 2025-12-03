@@ -29,20 +29,20 @@ use testing_framework_workflows::ScenarioBuilderExt;
 use std::time::Duration;
 
 // Define the scenario (1 validator + 1 executor, tx + DA workload)
-let mut plan = ScenarioBuilder::topology()
-        .network_star()
-        .validators(1)
-        .executors(1)
-        .apply()
+let mut plan = ScenarioBuilder::topology_with(|t| {
+        t.network_star()
+            .validators(1)
+            .executors(1)
+    })
     .wallets(64)
-    .transactions()
-        .rate(5)                 // 5 transactions per block
-        .users(8)
-        .apply()
-    .da()
-        .channel_rate(1)         // 1 channel operation per block
-        .blob_rate(1)            // 1 blob dispersal per block
-        .apply()
+    .transactions_with(|txs| {
+        txs.rate(5)                 // 5 transactions per block
+            .users(8)
+    })
+    .da_with(|da| {
+        da.channel_rate(1)         // 1 channel operation per block
+            .blob_rate(1)          // 1 blob dispersal per block
+    })
     .expect_consensus_liveness()
     .with_run_duration(Duration::from_secs(60))
     .build();
@@ -71,11 +71,11 @@ Let's unpack the code:
 ### 1. Topology Configuration
 
 ```rust
-ScenarioBuilder::topology()
-        .network_star()      // Star topology: all nodes connect to seed
-        .validators(1)       // 1 validator node
-        .executors(1)        // 1 executor node (validator + DA dispersal)
-        .apply()
+ScenarioBuilder::topology_with(|t| {
+        t.network_star()      // Star topology: all nodes connect to seed
+            .validators(1)    // 1 validator node
+            .executors(1)     // 1 executor node (validator + DA dispersal)
+    })
 ```
 
 This defines **what** your test network looks like.
@@ -184,4 +184,3 @@ Now that you have a working test:
 - **See more examples**: [Examples](examples.md)
 - **API reference**: [Builder API Quick Reference](dsl-cheat-sheet.md)
 - **Debug failures**: [Troubleshooting](troubleshooting.md)
-
