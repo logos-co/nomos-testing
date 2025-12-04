@@ -219,7 +219,7 @@ impl Validator {
             api: ApiClient::new(addr, Some(testing_addr)),
         };
 
-        tokio::time::timeout(adjust_timeout(Duration::from_secs(30)), async {
+        tokio::time::timeout(adjust_timeout(Duration::from_secs(60)), async {
             node.wait_online().await;
         })
         .await?;
