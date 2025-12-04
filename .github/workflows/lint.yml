@@ -292,6 +292,10 @@ jobs:
             echo "Circuits bundle missing in nomos-binaries tarball" >&2
             exit 1
           fi
+      - name: Add top-level KZG params file for compose mount
+        run: |
+          curl -fsSL "https://raw.githubusercontent.com/logos-co/nomos-node/${NOMOS_NODE_REV}/tests/kzgrs/kzgrs_test_params" \
+            -o testing-framework/assets/stack/kzgrs_test_params/kzgrs_test_params
 
       - name: Prune docker to free space
         run: |
