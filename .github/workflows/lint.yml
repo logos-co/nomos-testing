@@ -230,6 +230,16 @@ jobs:
       - name: Run local runner smoke (ignored test)
         run: |
           NOMOS_TESTS_KEEP_LOGS=true LOCAL_DEMO_RUN_SECS=60 cargo +nightly-2025-09-14 test -p runner-examples --test local_runner_bin_smoke -- --ignored --nocapture
+      - name: Show local runner logs (on failure)
+        if: failure()
+        run: |
+          LOG_DIR="${NOMOS_LOG_DIR:-${RUNNER_TEMP}/local-logs}"
+          if [ -d "$LOG_DIR" ]; then
+            echo "Dumping *.log files from $LOG_DIR"
+            find "$LOG_DIR" -maxdepth 2 -type f -name "*.log" -print -exec tail -n 200 {} \;
+          else
+            echo "No local logs directory at $LOG_DIR"
+          fi
       - name: Archive local smoke logs
         if: always()
         run: |
