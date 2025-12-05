@@ -1216,7 +1216,8 @@ impl<'a> ReadinessCheck<'a> for DaBalancerReadiness<'a> {
             .into_iter()
             .map(|(label, threshold, stats)| {
                 let connected = connected_subnetworks(&stats);
-                format!("{label}: connected={connected}, required={threshold}")
+                let details = format_balancer_stats(&stats);
+                format!("{label}: connected={connected}, required={threshold}, stats={details}")
             })
             .collect::<Vec<_>>()
             .join(", ");
@@ -1233,6 +1234,17 @@ fn connected_subnetworks(stats: &BalancerStats) -> usize {
         .values()
         .filter(|stat| stat.inbound > 0 || stat.outbound > 0)
         .count()
+}
+
+fn format_balancer_stats(stats: &BalancerStats) -> String {
+    if stats.is_empty() {
+        return "empty".into();
+    }
+    stats
+        .iter()
+        .map(|(subnet, stat)| format!("{}:in={},out={}", subnet, stat.inbound, stat.outbound))
+        .collect::<Vec<_>>()
+        .join(";")
 }
 
 fn build_timeout_summary(
