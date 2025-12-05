@@ -13,8 +13,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: macos
-            runs-on: [self-hosted, macOS, X64]
           - name: linux
             runs-on: ubuntu-latest
     runs-on: ${{ matrix.runs-on }}
