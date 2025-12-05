@@ -138,7 +138,7 @@ jobs:
       LOCAL_DEMO_VALIDATORS: 1
       LOCAL_DEMO_EXECUTORS: 1
       NOMOS_CIRCUITS: ${{ github.workspace }}/.tmp/nomos-circuits
-      NOMOS_KZGRS_PARAMS_PATH: ${{ github.workspace }}/.tmp/nomos-circuits/pol/proving_key.zkey
+      NOMOS_KZGRS_PARAMS_PATH: ${{ github.workspace }}/.tmp/kzgrs_test_params
       CARGO_INCREMENTAL: 0
       CARGO_PROFILE_DEV_DEBUG: 0
       RUSTFLAGS: -C debuginfo=0
@@ -208,16 +208,22 @@ jobs:
           echo "NOMOS_EXECUTOR_BIN=/usr/local/bin/nomos-executor" >> "$GITHUB_ENV"
           if [ -d "${BIN_DIR}/circuits" ]; then
             echo "NOMOS_CIRCUITS=${BIN_DIR}/circuits" >> "$GITHUB_ENV"
-            echo "NOMOS_KZGRS_PARAMS_PATH=${BIN_DIR}/circuits/pol/proving_key.zkey" >> "$GITHUB_ENV"
           else
             echo "Circuits bundle missing in nomos-binaries tarball" >&2
             exit 1
           fi
+      - name: Download KZG params for DA (raw)
+        run: |
+          mkdir -p "$(dirname "${NOMOS_KZGRS_PARAMS_PATH}")"
+          curl -fsSL "https://raw.githubusercontent.com/logos-co/nomos-node/${NOMOS_NODE_REV}/tests/kzgrs/kzgrs_test_params" \
+            -o "${NOMOS_KZGRS_PARAMS_PATH}"
       - name: Stage KZG params for local run
         run: |
           rm -rf testing-framework/assets/stack/kzgrs_test_params
           mkdir -p testing-framework/assets/stack/kzgrs_test_params
           rsync -a --delete "$NOMOS_CIRCUITS"/ testing-framework/assets/stack/kzgrs_test_params/ || true
+          cp "${NOMOS_KZGRS_PARAMS_PATH}" testing-framework/assets/stack/kzgrs_test_params/kzgrs_test_params
+          echo "NOMOS_KZGRS_PARAMS_PATH=${GITHUB_WORKSPACE}/testing-framework/assets/stack/kzgrs_test_params/kzgrs_test_params" >> "$GITHUB_ENV"
       - name: Run local runner smoke (ignored test)
         run: |
           NOMOS_TESTS_KEEP_LOGS=true cargo +nightly-2025-09-14 test -p runner-examples --test local_runner_bin_smoke -- --ignored --nocapture
