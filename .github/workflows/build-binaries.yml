@@ -63,7 +63,10 @@ jobs:
           # Work around flate2 1.1.6 ambiguity issues by pinning to a fixed release.
           cargo +nightly-2025-09-14 update -p flate2 --precise 1.1.5
           cargo +nightly-2025-09-14 build --features testing --bins
-          cargo +nightly-2025-09-14 build --features testing --bin local_runner -p runner-examples
+      - name: Build local runner from workspace
+        run: |
+          cd "${GITHUB_WORKSPACE}"
+          cargo +nightly-2025-09-14 build --features testing -p runner-examples --bin local_runner
       - name: Package binaries
         run: |
           mkdir -p artifacts
