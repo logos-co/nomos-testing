@@ -1,4 +1,8 @@
-use std::{env, path::Path, process::Command};
+use std::{
+    env,
+    path::Path,
+    process::{Command, Stdio},
+};
 
 // Manually run the local runner binary as a smoke test.
 // This spins up real nodes and should be invoked explicitly:
@@ -31,7 +35,9 @@ fn local_runner_bin_smoke() {
         }
     };
 
-    let output = cmd
+    let status = cmd
+        .stdout(Stdio::inherit())
+        .stderr(Stdio::inherit())
         .env("POL_PROOF_DEV_MODE", "true")
         .env(
             "NOMOS_CIRCUITS",
@@ -59,15 +65,10 @@ fn local_runner_bin_smoke() {
             env::var("LOCAL_DEMO_EXECUTORS").unwrap_or_else(|_| "1".into()),
         )
         .env("RUST_BACKTRACE", "1")
-        .output()
+        .status()
         .expect("failed to spawn local runner");
 
-    if !output.status.success() {
-        panic!(
-            "local runner binary failed: status={}\nstdout:\n{}\nstderr:\n{}",
-            output.status,
-            String::from_utf8_lossy(&output.stdout),
-            String::from_utf8_lossy(&output.stderr),
-        );
+    if !status.success() {
+        panic!("local runner binary failed: status={status}");
     }
 }
