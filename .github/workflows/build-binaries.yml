@@ -60,8 +60,8 @@ jobs:
           git checkout "${NOMOS_NODE_REV}"
           git reset --hard
           git clean -fdx
-          # Work around flate2 1.1.x ambiguity issues by pinning to a stable release.
-          cargo +nightly-2025-09-14 update -p flate2 --precise 1.0.28
+          # Work around flate2 1.1.6 ambiguity issues by pinning to a fixed release.
+          cargo +nightly-2025-09-14 update -p flate2 --precise 1.1.9
           cargo +nightly-2025-09-14 build --features testing --bins
       - name: Package binaries
         run: |
