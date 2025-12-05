@@ -212,6 +212,19 @@ jobs:
             echo "Circuits bundle missing in nomos-binaries tarball" >&2
             exit 1
           fi
+      - name: Build nomos binaries with pol-dev-mode
+        env:
+          RUSTFLAGS: '--cfg feature="pol-dev-mode"'
+          NOMOS_CIRCUITS: ${{ env.NOMOS_CIRCUITS }}
+        run: |
+          TARGET_DIR="${CARGO_TARGET_DIR:-target}"
+          cargo +nightly-2025-09-14 build -p nomos-node -p nomos-executor -p nomos-cli --features testing
+          sudo cp "${TARGET_DIR}/debug/nomos-node" /usr/local/bin/
+          sudo cp "${TARGET_DIR}/debug/nomos-executor" /usr/local/bin/
+          sudo cp "${TARGET_DIR}/debug/nomos-cli" /usr/local/bin/
+          sudo chmod +x /usr/local/bin/nomos-node /usr/local/bin/nomos-executor /usr/local/bin/nomos-cli
+          echo "NOMOS_NODE_BIN=/usr/local/bin/nomos-node" >> "$GITHUB_ENV"
+          echo "NOMOS_EXECUTOR_BIN=/usr/local/bin/nomos-executor" >> "$GITHUB_ENV"
       - name: Download KZG params for DA (raw)
         run: |
           mkdir -p "$(dirname "${NOMOS_KZGRS_PARAMS_PATH}")"
