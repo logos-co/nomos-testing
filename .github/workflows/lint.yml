@@ -261,11 +261,19 @@ jobs:
           fi
       - name: Upload local smoke logs
         if: failure()
+        id: upload-local-logs
         uses: actions/upload-artifact@v4
         with:
           name: local-smoke-logs
           path: ${{ runner.temp }}/local-logs.tgz
           if-no-files-found: error
+      - name: Print local smoke logs download URL
+        if: failure()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/artifacts" \
+            --jq '.artifacts[] | select(.name=="local-smoke-logs") | "local-smoke-logs: \(.archive_download_url)"' || true
 
   compose_smoke:
     runs-on: ubuntu-latest
