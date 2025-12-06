@@ -2,6 +2,9 @@
   "config": {
     "MD013": false, // Line length: allow longer lines in prose and tables.
     "MD040": false, // Fenced code blocks language: allow language-less fences.
-    "MD060": false  // Table column style: relax spacing requirements.
+    "MD060": false, // Table column style: relax spacing requirements.
+    "MD031": false, // Blank lines around fenced code blocks: allow compact fences.
+    "MD032": false, // Blank lines around lists: allow tight lists when desired.
+    "MD022": false  // Blank lines around headings: allow headings adjacent to text.
   }
 }
