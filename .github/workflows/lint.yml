@@ -280,7 +280,7 @@ jobs:
     env:
       TMPDIR: ${{ github.workspace }}/.tmp
       NOMOS_CIRCUITS: ${{ github.workspace }}/.tmp/nomos-circuits
-      NOMOS_TESTNET_IMAGE: nomos-testnet:local
+      NOMOS_TESTNET_IMAGE: nomos-testnet:${{ github.run_id }}
       DOCKER_BUILDKIT: 1
       CARGO_INCREMENTAL: 0
       CARGO_PROFILE_DEV_DEBUG: 0
