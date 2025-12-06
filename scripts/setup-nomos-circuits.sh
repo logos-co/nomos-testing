@@ -211,10 +211,12 @@ main() {
         handle_macos_quarantine
     fi
 
-    if [[ "$rebuild_required" == "1" || "$platform" == *"aarch64" ]]; then
+    if [[ "$rebuild_required" == "1" ]]; then
         echo
         print_info "Rebuilding rapidsnark prover for ${platform}..."
         "${SCRIPT_DIR}/build-rapidsnark.sh" "$INSTALL_DIR"
+    else
+        print_info "Skipping rapidsnark rebuild (set NOMOS_CIRCUITS_REBUILD_RAPIDSNARK=1 to force)."
     fi
 
     echo

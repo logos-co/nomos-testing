@@ -7,6 +7,7 @@ export CFG_FILE_PATH="/config.yaml" \
        CFG_HOST_IP=$(hostname -i) \
        CFG_HOST_KIND="${CFG_HOST_KIND:-validator}" \
        CFG_HOST_IDENTIFIER="${CFG_HOST_IDENTIFIER:-validator-$(hostname -i)}" \
+       NOMOS_KZGRS_PARAMS_PATH="${NOMOS_KZGRS_PARAMS_PATH:-/opt/circuits/pol/proving_key.zkey}" \
        LOG_LEVEL="INFO" \
        POL_PROOF_DEV_MODE="${POL_PROOF_DEV_MODE:-true}"
 

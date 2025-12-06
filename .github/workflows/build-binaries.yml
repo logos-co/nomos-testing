@@ -5,7 +5,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  NOMOS_NODE_REV: 2f60a0372c228968c3526c341ebc7e58bbd178dd
+  NOMOS_NODE_REV: d2dd5a5084e1daef4032562c77d41de5e4d495f8
   NOMOS_BUNDLE_VERSION: v4
 
 jobs:
@@ -67,17 +67,12 @@ jobs:
           # Work around flate2 1.1.6 ambiguity issues by pinning to a fixed release.
           cargo +nightly-2025-09-14 update -p flate2 --precise 1.1.5
           cargo +nightly-2025-09-14 build --all-features --bins
-      - name: Build local runner from workspace
-        run: |
-          cd "${GITHUB_WORKSPACE}"
-          cargo +nightly-2025-09-14 build --all-features -p runner-examples --bin local_runner
       - name: Package binaries
         run: |
           mkdir -p artifacts
           cp "${CARGO_TARGET_DIR}/debug/nomos-node" artifacts/
           cp "${CARGO_TARGET_DIR}/debug/nomos-executor" artifacts/
           cp "${CARGO_TARGET_DIR}/debug/nomos-cli" artifacts/
-          cp "${CARGO_TARGET_DIR}/debug/local_runner" artifacts/
           mkdir -p artifacts/circuits
           rsync -a "$NOMOS_CIRCUITS"/ artifacts/circuits/
           tar -czf nomos-binaries.tar.gz -C artifacts .

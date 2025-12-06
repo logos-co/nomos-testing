@@ -20,7 +20,7 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 VERSION="${1:-v0.3.1}"
 STACK_DIR="${STACK_DIR:-${ROOT_DIR}/testing-framework/assets/stack/kzgrs_test_params}"
 HOST_DIR="${HOST_DIR:-${ROOT_DIR}/.tmp/nomos-circuits-host}"
-NOMOS_NODE_REV="${NOMOS_NODE_REV:-2f60a0372c228968c3526c341ebc7e58bbd178dd}"
+NOMOS_NODE_REV="${NOMOS_NODE_REV:-d2dd5a5084e1daef4032562c77d41de5e4d495f8}"
 
 detect_platform() {
   local os arch

@@ -52,11 +52,11 @@ ScenarioBuilder::topology_with(|t| {
 ```rust
 .enable_node_control()       // Enable node control capability
 .chaos_with(|c| {
-    c.restart()               // Random restart chaos
+    c.restart()              // Random restart chaos
         .min_delay(Duration::from_secs(30))     // Min time between restarts
         .max_delay(Duration::from_secs(60))     // Max time between restarts
         .target_cooldown(Duration::from_secs(45))  // Cooldown after restart
-        .apply()
+        .apply()             // Required for chaos configuration
 })
 ```
 

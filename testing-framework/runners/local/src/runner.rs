@@ -123,10 +123,12 @@ async fn wait_for_readiness(
 ) -> Result<(), ReadinessError> {
     info!("waiting for local network readiness");
     topology.wait_network_ready().await?;
-    if !skip_membership {
-        info!("waiting for membership readiness");
-        topology.wait_membership_ready().await?;
+    if skip_membership {
+        // Allow callers to bypass deeper readiness for lightweight demos.
+        return Ok(());
     }
+    info!("waiting for membership readiness");
+    topology.wait_membership_ready().await?;
     info!("waiting for DA balancer readiness");
     topology.wait_da_balancer_ready().await
 }

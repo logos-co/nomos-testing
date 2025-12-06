@@ -2,7 +2,7 @@ use std::{collections::HashMap, net::Ipv4Addr, str::FromStr as _};
 
 use groth16::fr_to_bytes;
 use hex;
-use key_management_system::{
+use key_management_system_service::{
     backend::preload::PreloadKMSBackendSettings,
     keys::{Ed25519Key, Key, ZkKey},
 };

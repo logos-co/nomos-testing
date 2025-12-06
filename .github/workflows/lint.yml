@@ -7,7 +7,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  NOMOS_NODE_REV: 2f60a0372c228968c3526c341ebc7e58bbd178dd
+  NOMOS_NODE_REV: d2dd5a5084e1daef4032562c77d41de5e4d495f8
   NOMOS_BUNDLE_VERSION: v4
 permissions:
   actions: read

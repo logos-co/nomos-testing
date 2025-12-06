@@ -89,7 +89,7 @@ fn ensure_network_adapter(cryptarchia: &mut Mapping) {
     let mut network = Mapping::new();
     network.insert(
         Value::String("topic".into()),
-        Value::String(nomos_node::CONSENSUS_TOPIC.into()),
+        Value::String("/cryptarchia/proto".into()),
     );
     cryptarchia.insert(
         Value::String("network_adapter_settings".into()),

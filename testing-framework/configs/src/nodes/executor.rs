@@ -5,11 +5,10 @@ use std::{
     time::Duration,
 };
 
-use chain_leader::LeaderSettings;
-use chain_network::{ChainNetworkSettings, OrphanConfig, SyncConfig};
-use chain_service::{CryptarchiaSettings, StartingState};
-use cryptarchia_engine::time::SlotConfig;
-use key_management_system::keys::{Key, ZkKey};
+use chain_leader::LeaderConfig as ChainLeaderConfig;
+use chain_network::{BootstrapConfig as ChainBootstrapConfig, OrphanConfig, SyncConfig};
+use chain_service::StartingState;
+use key_management_system_service::keys::{Key, ZkKey};
 use nomos_blend_service::{
     core::settings::{CoverTrafficSettings, MessageDelayerSettings, SchedulerSettings, ZkSettings},
     settings::TimingSettings,
@@ -44,16 +43,26 @@ use nomos_node::{
             deployment::{self as blend_deployment},
             serde as blend_serde,
         },
-        deployment::{CustomDeployment, Settings as NodeDeploymentSettings},
-        mempool::MempoolConfig,
+        cryptarchia::{
+            deployment::{
+                SdpConfig as DeploymentSdpConfig, Settings as CryptarchiaDeploymentSettings,
+            },
+            serde::{
+                Config as CryptarchiaConfig, LeaderConfig as CryptarchiaLeaderConfig,
+                NetworkConfig as CryptarchiaNetworkConfig,
+                ServiceConfig as CryptarchiaServiceConfig,
+            },
+        },
+        deployment::DeploymentSettings,
+        mempool::{
+            deployment::Settings as MempoolDeploymentSettings, serde::Config as MempoolConfig,
+        },
         network::deployment::Settings as NetworkDeploymentSettings,
+        time::{deployment::Settings as TimeDeploymentSettings, serde::Config as TimeConfig},
     },
 };
 use nomos_sdp::SdpSettings;
-use nomos_time::{
-    TimeServiceSettings,
-    backends::{NtpTimeBackendSettings, ntp::async_client::NTPClientSettings},
-};
+use nomos_time::backends::{NtpTimeBackendSettings, ntp::async_client::NTPClientSettings};
 use nomos_utils::math::NonNegativeF64;
 use nomos_wallet::WalletServiceSettings;
 
@@ -68,55 +77,78 @@ use crate::{
 #[must_use]
 #[expect(clippy::too_many_lines, reason = "TODO: Address this at some point.")]
 pub fn create_executor_config(config: GeneralConfig) -> ExecutorConfig {
-    let (blend_user_config, deployment_settings) = build_blend_service_config(&config.blend_config);
+    let (blend_user_config, blend_deployment, network_deployment) =
+        build_blend_service_config(&config.blend_config);
+    let cryptarchia_deployment = CryptarchiaDeploymentSettings {
+        epoch_config: config.consensus_config.ledger_config.epoch_config,
+        consensus_config: config.consensus_config.ledger_config.consensus_config,
+        sdp_config: DeploymentSdpConfig {
+            service_params: config
+                .consensus_config
+                .ledger_config
+                .sdp_config
+                .service_params
+                .clone(),
+            min_stake: config.consensus_config.ledger_config.sdp_config.min_stake,
+        },
+        gossipsub_protocol: "/cryptarchia/proto".to_owned(),
+    };
+    let time_deployment = TimeDeploymentSettings {
+        slot_duration: config.time_config.slot_duration,
+    };
+    let mempool_deployment = MempoolDeploymentSettings {
+        pubsub_topic: "mantle".to_owned(),
+    };
+    let deployment_settings = DeploymentSettings::new_custom(
+        blend_deployment,
+        network_deployment,
+        cryptarchia_deployment,
+        time_deployment,
+        mempool_deployment,
+    );
     ExecutorConfig {
         network: config.network_config,
         blend: blend_user_config,
         deployment: deployment_settings,
-        cryptarchia: CryptarchiaSettings {
-            config: config.consensus_config.ledger_config.clone(),
-            starting_state: StartingState::Genesis {
-                genesis_tx: config.consensus_config.genesis_tx,
-            },
-            // Disable on-disk recovery in compose tests to avoid serde errors on
-            // non-string keys and keep services alive.
-            recovery_file: PathBuf::new(),
-            bootstrap: chain_service::BootstrapConfig {
-                prolonged_bootstrap_period: config.bootstrapping_config.prolonged_bootstrap_period,
-                force_bootstrap: false,
-                offline_grace_period: chain_service::OfflineGracePeriodConfig {
-                    grace_period: Duration::from_secs(20 * 60),
-                    state_recording_interval: Duration::from_secs(60),
+        cryptarchia: CryptarchiaConfig {
+            service: CryptarchiaServiceConfig {
+                starting_state: StartingState::Genesis {
+                    genesis_tx: config.consensus_config.genesis_tx,
+                },
+                // Disable on-disk recovery in compose tests to avoid serde errors on
+                // non-string keys and keep services alive.
+                recovery_file: PathBuf::new(),
+                bootstrap: chain_service::BootstrapConfig {
+                    prolonged_bootstrap_period: config
+                        .bootstrapping_config
+                        .prolonged_bootstrap_period,
+                    force_bootstrap: false,
+                    offline_grace_period: chain_service::OfflineGracePeriodConfig {
+                        grace_period: Duration::from_secs(20 * 60),
+                        state_recording_interval: Duration::from_secs(60),
+                    },
                 },
             },
-        },
-        chain_network: ChainNetworkSettings {
-            config: config.consensus_config.ledger_config.clone(),
-            network_adapter_settings:
-                chain_network::network::adapters::libp2p::LibP2pAdapterSettings {
-                    topic: String::from(nomos_node::CONSENSUS_TOPIC),
+            network: CryptarchiaNetworkConfig {
+                bootstrap: ChainBootstrapConfig {
+                    ibd: chain_network::IbdConfig {
+                        peers: HashSet::new(),
+                        delay_before_new_download: Duration::from_secs(10),
+                    },
                 },
-            bootstrap: chain_network::BootstrapConfig {
-                ibd: chain_network::IbdConfig {
-                    peers: HashSet::new(),
-                    delay_before_new_download: Duration::from_secs(10),
-                },
-            },
-            sync: SyncConfig {
-                orphan: OrphanConfig {
-                    max_orphan_cache_size: NonZeroUsize::new(5)
-                        .expect("Max orphan cache size must be non-zero"),
+                sync: SyncConfig {
+                    orphan: OrphanConfig {
+                        max_orphan_cache_size: NonZeroUsize::new(5)
+                            .expect("Max orphan cache size must be non-zero"),
+                    },
                 },
             },
-        },
-        cryptarchia_leader: LeaderSettings {
-            transaction_selector_settings: (),
-            config: config.consensus_config.ledger_config.clone(),
-            leader_config: config.consensus_config.leader_config.clone(),
-            blend_broadcast_settings:
-                nomos_blend_service::core::network::libp2p::Libp2pBroadcastSettings {
-                    topic: String::from(nomos_node::CONSENSUS_TOPIC),
+            leader: CryptarchiaLeaderConfig {
+                leader: ChainLeaderConfig {
+                    pk: config.consensus_config.leader_config.pk,
+                    sk: config.consensus_config.leader_config.sk.clone(),
                 },
+            },
         },
         da_network: DaNetworkConfig {
             backend: DaNetworkExecutorBackendSettings {
@@ -203,24 +235,19 @@ pub fn create_executor_config(config: GeneralConfig) -> ExecutorConfig {
                 retry_limit: 2,
             },
         },
-        time: TimeServiceSettings {
-            backend_settings: NtpTimeBackendSettings {
+        time: TimeConfig {
+            backend: NtpTimeBackendSettings {
                 ntp_server: config.time_config.ntp_server,
                 ntp_client_settings: NTPClientSettings {
                     timeout: config.time_config.timeout,
                     listening_interface: config.time_config.interface,
                 },
                 update_interval: config.time_config.update_interval,
-                slot_config: SlotConfig {
-                    slot_duration: config.time_config.slot_duration,
-                    chain_start_time: config.time_config.chain_start_time,
-                },
-                epoch_config: config.consensus_config.ledger_config.epoch_config,
-                base_period_length: config.consensus_config.ledger_config.base_period_length(),
             },
+            chain_start_time: config.time_config.chain_start_time,
         },
         mempool: MempoolConfig {
-            pool_recovery_path: "./recovery/mempool.json".into(),
+            recovery_path: "./recovery/mempool.json".into(),
         },
         sdp: SdpSettings { declaration: None },
         wallet: WalletServiceSettings {
@@ -252,7 +279,11 @@ pub fn create_executor_config(config: GeneralConfig) -> ExecutorConfig {
 
 fn build_blend_service_config(
     config: &TopologyBlendConfig,
-) -> (blend_serde::Config, NodeDeploymentSettings) {
+) -> (
+    blend_serde::Config,
+    blend_deployment::Settings,
+    NetworkDeploymentSettings,
+) {
     let zk_key_id =
         key_id_for_preload_backend(&Key::from(ZkKey::new(config.secret_zk_key.clone())));
 
@@ -314,17 +345,14 @@ fn build_blend_service_config(
         },
     };
 
-    let deployment = NodeDeploymentSettings::Custom(CustomDeployment {
-        blend: deployment_settings,
-        network: NetworkDeploymentSettings {
-            identify_protocol_name: nomos_libp2p::protocol_name::StreamProtocol::new(
-                "/integration/nomos/identify/1.0.0",
-            ),
-            kademlia_protocol_name: nomos_libp2p::protocol_name::StreamProtocol::new(
-                "/integration/nomos/kad/1.0.0",
-            ),
-        },
-    });
+    let network_deployment = NetworkDeploymentSettings {
+        identify_protocol_name: nomos_libp2p::protocol_name::StreamProtocol::new(
+            "/integration/nomos/identify/1.0.0",
+        ),
+        kademlia_protocol_name: nomos_libp2p::protocol_name::StreamProtocol::new(
+            "/integration/nomos/kad/1.0.0",
+        ),
+    };
 
-    (user, deployment)
+    (user, deployment_settings, network_deployment)
 }

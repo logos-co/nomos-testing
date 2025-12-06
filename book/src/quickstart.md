@@ -91,14 +91,14 @@ Provides funded accounts for transaction submission.
 ### 3. Workloads
 
 ```rust
-.transactions()
-    .rate(5)                 // 5 transactions per block
-    .users(8)                // Use 8 of the 64 wallets
-    .apply()
-.da()
-    .channel_rate(1)         // 1 channel operation per block
-    .blob_rate(1)            // 1 blob dispersal per block
-    .apply()
+.transactions_with(|txs| {
+    txs.rate(5)              // 5 transactions per block
+        .users(8)            // Use 8 of the 64 wallets
+})
+.da_with(|da| {
+    da.channel_rate(1)       // 1 channel operation per block
+        .blob_rate(1)        // 1 blob dispersal per block
+})
 ```
 
 Generates both transaction and DA traffic to stress both subsystems.

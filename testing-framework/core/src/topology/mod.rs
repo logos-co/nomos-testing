@@ -18,7 +18,7 @@ use configs::{
 };
 use futures::future::join_all;
 use groth16::fr_to_bytes;
-use key_management_system::{
+use key_management_system_service::{
     backend::preload::PreloadKMSBackendSettings,
     keys::{Ed25519Key, Key, ZkKey},
 };

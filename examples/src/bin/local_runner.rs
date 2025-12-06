@@ -65,11 +65,12 @@ async fn run_local_case(
         .expect_consensus_liveness()
         .build();
 
-    let deployer = LocalDeployer::default();
+    let deployer = LocalDeployer::default().with_membership_check(true);
     info!("deploying local nodes");
     let runner: Runner = deployer.deploy(&plan).await?;
     info!("running scenario");
     runner.run(&mut plan).await.map(|_| ())?;
+    info!("scenario complete");
     Ok(())
 }
 

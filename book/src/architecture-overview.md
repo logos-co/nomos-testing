@@ -65,8 +65,8 @@ let mut plan = ScenarioBuilder::topology_with(|t| {
 ```
 
 **Key API Points:**
-- Topology uses `.topology().validators(N).executors(M).apply()` pattern (not `with_node_counts`)
-- Workloads are configured via extension traits (`ScenarioBuilderExt`, `ChaosBuilderExt`)
+- Topology uses `.topology_with(|t| { t.validators(N).executors(M) })` closure pattern
+- Workloads are configured via `_with` closures (`transactions_with`, `da_with`, `chaos_with`)
 - Chaos workloads require `.enable_node_control()` and a compatible runner
 
 ## Deployers

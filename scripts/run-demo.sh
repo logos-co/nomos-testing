@@ -15,14 +15,14 @@ set -euo pipefail
 #   NOMOS_TESTNET_IMAGE           - image tag (default nomos-testnet:local)
 #   NOMOS_CIRCUITS_PLATFORM       - override host platform detection
 #   NOMOS_CIRCUITS_REBUILD_RAPIDSNARK - set to 1 to force rapidsnark rebuild
-#   NOMOS_NODE_REV                - nomos-node git rev for local binaries (default 2f60a0372c228968c3526c341ebc7e58bbd178dd)
+#   NOMOS_NODE_REV                - nomos-node git rev for local binaries (default d2dd5a5084e1daef4032562c77d41de5e4d495f8)
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 MODE="${1:-compose}"
 RUN_SECS="${2:-60}"
 VERSION="${VERSION:-v0.3.1}"
 IMAGE="${NOMOS_TESTNET_IMAGE:-nomos-testnet:local}"
-NOMOS_NODE_REV="${NOMOS_NODE_REV:-2f60a0372c228968c3526c341ebc7e58bbd178dd}"
+NOMOS_NODE_REV="${NOMOS_NODE_REV:-d2dd5a5084e1daef4032562c77d41de5e4d495f8}"
 
 case "$MODE" in
   compose) BIN="compose_runner" ;;

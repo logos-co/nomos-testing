@@ -25,11 +25,11 @@ use testing_framework_workflows::ScenarioBuilderExt;
 use std::time::Duration;
 
 async fn simple_consensus() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let mut plan = ScenarioBuilder::topology()
-            .network_star()
-            .validators(3)
-            .executors(0)
-            .apply()
+    let mut plan = ScenarioBuilder::topology_with(|t| {
+            t.network_star()
+                .validators(3)
+                .executors(0)
+        })
         .expect_consensus_liveness()
         .with_run_duration(Duration::from_secs(30))
         .build();
@@ -55,16 +55,16 @@ use testing_framework_workflows::ScenarioBuilderExt;
 use std::time::Duration;
 
 async fn transaction_workload() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let mut plan = ScenarioBuilder::topology()
-            .network_star()
-            .validators(2)
-            .executors(0)
-            .apply()
+    let mut plan = ScenarioBuilder::topology_with(|t| {
+            t.network_star()
+                .validators(2)
+                .executors(0)
+        })
         .wallets(20)
-        .transactions()
-            .rate(5)
-            .users(10)
-            .apply()
+        .transactions_with(|txs| {
+            txs.rate(5)
+                .users(10)
+        })
         .expect_consensus_liveness()
         .with_run_duration(Duration::from_secs(60))
         .build();
@@ -90,20 +90,20 @@ use testing_framework_workflows::ScenarioBuilderExt;
 use std::time::Duration;
 
 async fn da_and_transactions() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let mut plan = ScenarioBuilder::topology()
-            .network_star()
-            .validators(3)
-            .executors(2)
-            .apply()
+    let mut plan = ScenarioBuilder::topology_with(|t| {
+            t.network_star()
+                .validators(3)
+                .executors(2)
+        })
         .wallets(30)
-        .transactions()
-            .rate(5)
-            .users(15)
-            .apply()
-        .da()
-            .channel_rate(1)
-            .blob_rate(2)
-            .apply()
+        .transactions_with(|txs| {
+            txs.rate(5)
+                .users(15)
+        })
+        .da_with(|da| {
+            da.channel_rate(1)
+                .blob_rate(2)
+        })
         .expect_consensus_liveness()
         .with_run_duration(Duration::from_secs(90))
         .build();
@@ -129,23 +129,24 @@ use testing_framework_workflows::{ScenarioBuilderExt, ChaosBuilderExt};
 use std::time::Duration;
 
 async fn chaos_resilience() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let mut plan = ScenarioBuilder::topology()
-            .network_star()
-            .validators(4)
-            .executors(2)
-            .apply()
+    let mut plan = ScenarioBuilder::topology_with(|t| {
+            t.network_star()
+                .validators(4)
+                .executors(2)
+        })
         .enable_node_control()
         .wallets(20)
-        .transactions()
-            .rate(3)
-            .users(10)
-            .apply()
-        .chaos()
-            .restart()
-            .min_delay(Duration::from_secs(20))
-            .max_delay(Duration::from_secs(40))
-            .target_cooldown(Duration::from_secs(30))
-            .apply()
+        .transactions_with(|txs| {
+            txs.rate(3)
+                .users(10)
+        })
+        .chaos_with(|c| {
+            c.restart()
+                .min_delay(Duration::from_secs(20))
+                .max_delay(Duration::from_secs(40))
+                .target_cooldown(Duration::from_secs(30))
+                .apply()
+        })
         .expect_consensus_liveness()
         .with_run_duration(Duration::from_secs(120))
         .build();

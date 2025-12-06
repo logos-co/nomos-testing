@@ -11,7 +11,7 @@ pub mod wallet;
 use blend::GeneralBlendConfig;
 use consensus::{GeneralConsensusConfig, ProviderInfo, create_genesis_tx_with_declarations};
 use da::GeneralDaConfig;
-use key_management_system::{
+use key_management_system_service::{
     backend::preload::PreloadKMSBackendSettings,
     keys::{Ed25519Key, Key, ZkKey},
 };

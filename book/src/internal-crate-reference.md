@@ -57,13 +57,14 @@ High-level roles of the crates that make up the framework:
 
 3. **Use in examples** in `examples/src/bin/your_scenario.rs`:
    ```rust
-   let mut plan = ScenarioBuilder::topology()
-           .network_star()
-           .validators(3)
-           .executors(0)
-           .apply()
-       .your_workload()  // Your new DSL method
-           .apply()
+   let mut plan = ScenarioBuilder::topology_with(|t| {
+           t.network_star()
+               .validators(3)
+               .executors(0)
+       })
+       .your_workload_with(|w| {  // Your new DSL method with closure
+           w.some_config()
+       })
        .build();
    ```
 

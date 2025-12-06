@@ -10,14 +10,14 @@ Describe **what** you want to test, not **how** to orchestrate it:
 
 ```rust
 // Good: declarative
-ScenarioBuilder::topology()
-        .network_star()
-        .validators(2)
-        .executors(1)
-        .apply()
-    .transactions()
-        .rate(5)             // 5 transactions per block
-        .apply()
+ScenarioBuilder::topology_with(|t| {
+        t.network_star()
+            .validators(2)
+            .executors(1)
+    })
+    .transactions_with(|txs| {
+        txs.rate(5)             // 5 transactions per block
+    })
     .expect_consensus_liveness()
     .build();
 
@@ -40,14 +40,14 @@ Reason in **blocks** and **consensus intervals**, not wall-clock seconds.
 
 ```rust
 // Good: protocol-oriented thinking
-let plan = ScenarioBuilder::topology()
-        .network_star()
-        .validators(2)
-        .executors(1)
-        .apply()
-    .transactions()
-        .rate(5)             // 5 transactions per block
-        .apply()
+let plan = ScenarioBuilder::topology_with(|t| {
+        t.network_star()
+            .validators(2)
+            .executors(1)
+    })
+    .transactions_with(|txs| {
+        txs.rate(5)             // 5 transactions per block
+    })
     .with_run_duration(Duration::from_secs(60))  // Let framework calculate expected blocks
     .expect_consensus_liveness()  // "Did we produce the expected blocks?"
     .build();
@@ -74,30 +74,34 @@ not "blocks produced in exact wall-clock seconds".
 **Chaos is opt-in:**
 ```rust
 // Separate: functional test (deterministic)
-let plan = ScenarioBuilder::topology()
-        .network_star()
-        .validators(2)
-        .executors(1)
-        .apply()
-    .transactions()
-        .rate(5)             // 5 transactions per block
-        .apply()
+let plan = ScenarioBuilder::topology_with(|t| {
+        t.network_star()
+            .validators(2)
+            .executors(1)
+    })
+    .transactions_with(|txs| {
+        txs.rate(5)             // 5 transactions per block
+    })
     .expect_consensus_liveness()
     .build();
 
 // Separate: chaos test (introduces randomness)
-let chaos_plan = ScenarioBuilder::topology()
-        .network_star()
-        .validators(3)
-        .executors(2)
-        .apply()
+let chaos_plan = ScenarioBuilder::topology_with(|t| {
+        t.network_star()
+            .validators(3)
+            .executors(2)
+    })
     .enable_node_control()
-    .chaos()
-        .restart()
-        .apply()
-    .transactions()
-        .rate(5)             // 5 transactions per block
-        .apply()
+    .chaos_with(|c| {
+        c.restart()
+            .min_delay(Duration::from_secs(30))
+            .max_delay(Duration::from_secs(60))
+            .target_cooldown(Duration::from_secs(45))
+            .apply()
+    })
+    .transactions_with(|txs| {
+        txs.rate(5)             // 5 transactions per block
+    })
     .expect_consensus_liveness()
     .build();
 ```

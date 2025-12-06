@@ -24,16 +24,16 @@ async fn load_progression_test() -> Result<(), Box<dyn std::error::Error + Send 
     for rate in [5, 10, 20, 30] {
         println!("Testing with rate: {}", rate);
         
-        let mut plan = ScenarioBuilder::topology()
-                .network_star()
-                .validators(3)
-                .executors(2)
-                .apply()
+        let mut plan = ScenarioBuilder::topology_with(|t| {
+                t.network_star()
+                    .validators(3)
+                    .executors(2)
+            })
             .wallets(50)
-            .transactions()
-                .rate(rate)
-                .users(20)
-                .apply()
+            .transactions_with(|txs| {
+                txs.rate(rate)
+                    .users(20)
+            })
             .expect_consensus_liveness()
             .with_run_duration(Duration::from_secs(60))
             .build();
@@ -60,20 +60,20 @@ use testing_framework_workflows::ScenarioBuilderExt;
 use std::time::Duration;
 
 async fn sustained_load_test() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let mut plan = ScenarioBuilder::topology()
-            .network_star()
-            .validators(4)
-            .executors(2)
-            .apply()
+    let mut plan = ScenarioBuilder::topology_with(|t| {
+            t.network_star()
+                .validators(4)
+                .executors(2)
+        })
         .wallets(100)
-        .transactions()
-            .rate(15)
-            .users(50)
-            .apply()
-        .da()
-            .channel_rate(2)
-            .blob_rate(3)
-            .apply()
+        .transactions_with(|txs| {
+            txs.rate(15)
+                .users(50)
+        })
+        .da_with(|da| {
+            da.channel_rate(2)
+                .blob_rate(3)
+        })
         .expect_consensus_liveness()
         .with_run_duration(Duration::from_secs(300))
         .build();
@@ -99,23 +99,24 @@ use testing_framework_workflows::{ScenarioBuilderExt, ChaosBuilderExt};
 use std::time::Duration;
 
 async fn aggressive_chaos_test() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-    let mut plan = ScenarioBuilder::topology()
-            .network_star()
-            .validators(4)
-            .executors(2)
-            .apply()
+    let mut plan = ScenarioBuilder::topology_with(|t| {
+            t.network_star()
+                .validators(4)
+                .executors(2)
+        })
         .enable_node_control()
         .wallets(50)
-        .transactions()
-            .rate(10)
-            .users(20)
-            .apply()
-        .chaos()
-            .restart()
-            .min_delay(Duration::from_secs(10))
-            .max_delay(Duration::from_secs(20))
-            .target_cooldown(Duration::from_secs(15))
-            .apply()
+        .transactions_with(|txs| {
+            txs.rate(10)
+                .users(20)
+        })
+        .chaos_with(|c| {
+            c.restart()
+                .min_delay(Duration::from_secs(10))
+                .max_delay(Duration::from_secs(20))
+                .target_cooldown(Duration::from_secs(15))
+                .apply()
+        })
         .expect_consensus_liveness()
         .with_run_duration(Duration::from_secs(180))
         .build();

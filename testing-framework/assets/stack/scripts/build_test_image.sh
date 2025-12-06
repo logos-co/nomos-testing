@@ -10,6 +10,7 @@ DOCKERFILE_PATH="${ROOT_DIR}/testing-framework/assets/stack/Dockerfile"
 IMAGE_TAG="${IMAGE_TAG:-nomos-testnet:local}"
 VERSION="${VERSION:-v0.3.1}"
 CIRCUITS_OVERRIDE="${CIRCUITS_OVERRIDE:-testing-framework/assets/stack/kzgrs_test_params}"
+NOMOS_NODE_REV="${NOMOS_NODE_REV:-d2dd5a5084e1daef4032562c77d41de5e4d495f8}"
 
 echo "Workspace root: ${ROOT_DIR}"
 echo "Image tag: ${IMAGE_TAG}"
@@ -19,6 +20,7 @@ echo "Circuits version (fallback download): ${VERSION}"
 build_args=(
   -f "${DOCKERFILE_PATH}"
   -t "${IMAGE_TAG}"
+  --build-arg "NOMOS_NODE_REV=${NOMOS_NODE_REV}"
   "${ROOT_DIR}"
 )
 
