@@ -237,7 +237,8 @@ pub fn create_validator_config(config: GeneralConfig) -> ValidatorConfig {
             chain_start_time: config.time_config.chain_start_time,
         },
         mempool: MempoolConfig {
-            recovery_path: "./recovery/mempool.json".into(),
+            // Disable mempool recovery for hermetic tests.
+            recovery_path: PathBuf::new(),
         },
         sdp: SdpSettings { declaration: None },
         wallet: WalletServiceSettings {
@@ -282,7 +283,8 @@ fn build_blend_service_config(
     let user = blend_serde::Config {
         common: blend_serde::common::Config {
             non_ephemeral_signing_key: config.private_key.clone(),
-            recovery_path_prefix: PathBuf::from("./recovery/blend"),
+            // Disable on-disk recovery in tests to avoid serde issues on replays.
+            recovery_path_prefix: PathBuf::new(),
         },
         core: blend_serde::core::Config {
             backend: blend_serde::core::BackendConfig {
