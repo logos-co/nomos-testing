@@ -282,13 +282,15 @@ jobs:
       NOMOS_CIRCUITS: ${{ github.workspace }}/.tmp/nomos-circuits
       NOMOS_TESTNET_IMAGE: nomos-testnet:local
       DOCKER_BUILDKIT: 1
-      CARGO_TARGET_DIR: ${{ runner.temp }}/target-compose
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Prepare workspace tmpdir
         run: mkdir -p "$TMPDIR"
+
+      - name: Set compose target dir
+        run: echo "CARGO_TARGET_DIR=${RUNNER_TEMP}/target-compose" >> "$GITHUB_ENV"
 
       - name: Restore cached nomos binaries
         id: restore-nomos-bins-compose
