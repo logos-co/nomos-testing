@@ -522,8 +522,12 @@ fn build_nodes(
 
 fn base_environment(cfgsync_port: u16) -> Vec<EnvEntry> {
     let pol_mode = std::env::var("POL_PROOF_DEV_MODE").unwrap_or_else(|_| "true".to_string());
+    let rust_log = std::env::var("RUST_LOG").unwrap_or_else(|_| "info".to_string());
+    let nomos_log_level = std::env::var("NOMOS_LOG_LEVEL").unwrap_or_else(|_| "info".to_string());
     vec![
         EnvEntry::new("POL_PROOF_DEV_MODE", pol_mode),
+        EnvEntry::new("RUST_LOG", rust_log),
+        EnvEntry::new("NOMOS_LOG_LEVEL", nomos_log_level),
         EnvEntry::new(
             "CFG_SERVER_ADDR",
             format!("http://host.docker.internal:{cfgsync_port}"),

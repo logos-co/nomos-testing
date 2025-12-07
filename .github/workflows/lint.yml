@@ -369,8 +369,9 @@ jobs:
           COMPOSE_RUNNER_HOST: "127.0.0.1"
           RUST_BACKTRACE: "1"
           NOMOS_TESTS_TRACING: "true"
-          NOMOS_LOG_DIR: "${{ github.workspace }}/.tmp/compose-logs"
+          RUST_LOG: "info"
           NOMOS_LOG_LEVEL: "info"
+          NOMOS_LOG_DIR: "${{ github.workspace }}/.tmp/compose-logs"
         run: |
           mkdir -p "$TMPDIR"
           cargo run -p runner-examples --bin compose_runner -- --nocapture
