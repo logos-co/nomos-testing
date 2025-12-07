@@ -398,6 +398,8 @@ pub async fn prepare_environment(
                 ));
             }
             Err(err) => {
+                // Attempt to capture container logs even when bring-up fails early.
+                dump_compose_logs(&compose_path, &project_name, &workspace.root).await;
                 cfgsync_handle.shutdown();
                 last_err = Some(err);
                 if prometheus_port_locked {
