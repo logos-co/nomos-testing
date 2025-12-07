@@ -75,10 +75,11 @@ async fn run_k8s_case(
     let validator_clients = runner.context().node_clients().validator_clients().to_vec();
 
     info!("running scenario");
-    let _handle = runner
+    // Keep the handle alive until after we query consensus info, so port-forwards
+    // and services stay up while we inspect nodes.
+    let handle = runner
         .run(&mut plan)
         .await
-        .map(|_| ())
         .map_err(|err| format!("k8s scenario failed: {err}"))?;
 
     for (idx, client) in validator_clients.iter().enumerate() {
@@ -94,6 +95,9 @@ async fn run_k8s_case(
             .into());
         }
     }
+
+    // Explicitly drop after checks, allowing cleanup to proceed.
+    drop(handle);
 
     Ok(())
 }
