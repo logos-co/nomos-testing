@@ -375,8 +375,9 @@ jobs:
         run: |
           mkdir -p "$TMPDIR"
           # Pre-flight: ensure KZG params exist where compose will mount them.
-          if [ ! -f testing-framework/assets/stack/kzgrs_test_params/proving_key.zkey ]; then
-            echo "KZG params missing at testing-framework/assets/stack/kzgrs_test_params/proving_key.zkey" >&2
+          KZG_FILE=testing-framework/assets/stack/kzgrs_test_params/pol/proving_key.zkey
+          if [ ! -f "$KZG_FILE" ]; then
+            echo "KZG params missing at $KZG_FILE" >&2
             ls -l testing-framework/assets/stack/kzgrs_test_params || true
             exit 1
           fi

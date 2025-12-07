@@ -7,7 +7,7 @@ export CFG_FILE_PATH="/config.yaml" \
        CFG_HOST_IP=$(hostname -i) \
        CFG_HOST_KIND="${CFG_HOST_KIND:-executor}" \
        CFG_HOST_IDENTIFIER="${CFG_HOST_IDENTIFIER:-executor-$(hostname -i)}" \
-       NOMOS_KZGRS_PARAMS_PATH="${NOMOS_KZGRS_PARAMS_PATH:-/opt/circuits/kzgrs_test_params/proving_key.zkey}" \
+      NOMOS_KZGRS_PARAMS_PATH="${NOMOS_KZGRS_PARAMS_PATH:-/opt/circuits/kzgrs_test_params/pol/proving_key.zkey}" \
        LOG_LEVEL="INFO" \
        POL_PROOF_DEV_MODE="${POL_PROOF_DEV_MODE:-true}"
 
