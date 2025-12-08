@@ -23,6 +23,7 @@ RUN_SECS="${2:-60}"
 VERSION="${VERSION:-v0.3.1}"
 IMAGE="${NOMOS_TESTNET_IMAGE:-nomos-testnet:local}"
 NOMOS_NODE_REV="${NOMOS_NODE_REV:-d2dd5a5084e1daef4032562c77d41de5e4d495f8}"
+RESTORED_BINARIES=0
 
 case "$MODE" in
   compose) BIN="compose_runner" ;;
@@ -30,6 +31,41 @@ case "$MODE" in
   k8s) BIN="k8s_runner" ;;
   *) echo "Unknown mode '$MODE' (use compose|local)" >&2; exit 1 ;;
 esac
+
+restore_binaries_from_tar() {
+  local tar_path="${NOMOS_BINARIES_TAR:-${ROOT_DIR}/.tmp/nomos-binaries.tar.gz}"
+  local extract_dir="${ROOT_DIR}/.tmp/nomos-binaries"
+  if [ ! -f "$tar_path" ]; then
+    return 1
+  fi
+  echo "==> Restoring binaries from ${tar_path}"
+  rm -rf "${extract_dir}"
+  mkdir -p "${extract_dir}"
+  tar -xzf "$tar_path" -C "${extract_dir}"
+  local src="${extract_dir}/artifacts"
+  local bin_dst="${ROOT_DIR}/testing-framework/assets/stack/bin"
+  local circuits_src="${src}/circuits"
+  local circuits_dst="${ROOT_DIR}/testing-framework/assets/stack/kzgrs_test_params"
+  if [ -f "${src}/nomos-node" ] && [ -f "${src}/nomos-executor" ] && [ -f "${src}/nomos-cli" ]; then
+    mkdir -p "${bin_dst}"
+    cp "${src}/nomos-node" "${bin_dst}/"
+    cp "${src}/nomos-executor" "${bin_dst}/"
+    cp "${src}/nomos-cli" "${bin_dst}/"
+  else
+    echo "Binaries missing in ${tar_path}; fallback to build-from-source path" >&2
+    return 1
+  fi
+  if [ -d "${circuits_src}" ] && [ -f "${circuits_src}/kzgrs_test_params" ]; then
+    rm -rf "${circuits_dst}"
+    mkdir -p "${circuits_dst}"
+    rsync -a --delete "${circuits_src}/" "${circuits_dst}/"
+  else
+    echo "Circuits missing in ${tar_path}; fallback to download/build path" >&2
+    return 1
+  fi
+  RESTORED_BINARIES=1
+  export RESTORED_BINARIES
+}
 
 ensure_host_binaries() {
   # Build nomos-node/nomos-executor for the host if not already present.
@@ -75,9 +111,15 @@ ensure_host_binaries() {
   export NOMOS_NODE_BIN NOMOS_EXECUTOR_BIN
 }
 
+restore_binaries_from_tar || true
+
 echo "==> Preparing circuits (version ${VERSION})"
 SETUP_OUT="/tmp/nomos-setup-output.$$"
-"${ROOT_DIR}/scripts/setup-circuits-stack.sh" "${VERSION}" </dev/null | tee "$SETUP_OUT"
+if [ "${RESTORED_BINARIES}" -ne 1 ]; then
+  "${ROOT_DIR}/scripts/setup-circuits-stack.sh" "${VERSION}" </dev/null | tee "$SETUP_OUT"
+else
+  echo "Skipping circuits setup; using restored bundle"
+fi
 
 # Prefer the host bundle if it exists; otherwise fall back to Linux bundle.
 if [ -d "${ROOT_DIR}/.tmp/nomos-circuits-host" ]; then
