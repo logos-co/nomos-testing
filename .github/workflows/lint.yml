@@ -376,6 +376,9 @@ jobs:
         run: touch target/book/.nojekyll
       - name: Check links
         run: mdbook-linkcheck -s book
+      - name: Setup Pages
+        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
+        uses: actions/configure-pages@v4
       - name: Upload book artifact for Pages
         if: github.event_name == 'push' && github.ref == 'refs/heads/master'
         uses: actions/upload-pages-artifact@v3
