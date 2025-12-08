@@ -1,6 +1,8 @@
 /target
 **/target
 .tmp/
+/.tmp*/
+tmp-local-logs/
 # IDE / OS cruft
 .idea/
 .DS_Store
