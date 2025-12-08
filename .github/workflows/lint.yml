@@ -373,7 +373,7 @@ jobs:
           NOMOS_TESTNET_IMAGE: ${{ env.NOMOS_TESTNET_IMAGE }}
           COMPOSE_RUNNER_HOST: "127.0.0.1"
           NOMOS_TIME_BACKEND: "monotonic"
-          NOMOS_KZGRS_PARAMS_PATH: "/kzgrs_test_params/kzgrs_test_params"
+          NOMOS_KZGRS_PARAMS_PATH: "/kzgrs_test_params/pol/proving_key.zkey"
           RUST_BACKTRACE: "1"
           NOMOS_TESTS_TRACING: "true"
           RUST_LOG: "info"
