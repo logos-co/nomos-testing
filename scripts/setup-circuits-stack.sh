@@ -85,13 +85,29 @@ echo "Workspace: ${ROOT_DIR}"
 LINUX_PLATFORM="linux-x86_64"
 
 echo "Installing Linux bundle for Docker image into ${STACK_DIR}"
-rm -rf "${LINUX_STAGE_DIR}"
-mkdir -p "${LINUX_STAGE_DIR}"
-fetch_bundle "$LINUX_PLATFORM" "${LINUX_STAGE_DIR}" 0
-rm -rf "$STACK_DIR"
-mkdir -p "$STACK_DIR"
-cp -R "${LINUX_STAGE_DIR}/." "$STACK_DIR/"
-fetch_kzg_params "$STACK_DIR"
+stage_real="$(python3 - <<'PY'
+import os, sys
+print(os.path.realpath(sys.argv[1]))
+PY "${LINUX_STAGE_DIR}")"
+stack_real="$(python3 - <<'PY'
+import os, sys
+print(os.path.realpath(sys.argv[1]))
+PY "${STACK_DIR}")"
+
+if [ "$stage_real" = "$stack_real" ]; then
+  # No staging copy needed; install directly into STACK_DIR.
+  rm -rf "$STACK_DIR"
+  fetch_bundle "$LINUX_PLATFORM" "$STACK_DIR" 0
+  fetch_kzg_params "$STACK_DIR"
+else
+  rm -rf "${LINUX_STAGE_DIR}"
+  mkdir -p "${LINUX_STAGE_DIR}"
+  fetch_bundle "$LINUX_PLATFORM" "${LINUX_STAGE_DIR}" 0
+  rm -rf "$STACK_DIR"
+  mkdir -p "$STACK_DIR"
+  cp -R "${LINUX_STAGE_DIR}/." "$STACK_DIR/"
+  fetch_kzg_params "$STACK_DIR"
+fi
 echo "Linux bundle ready at ${STACK_DIR}"
 
 host_platform="${NOMOS_CIRCUITS_PLATFORM:-$(detect_platform)}"
