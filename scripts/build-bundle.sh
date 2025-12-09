@@ -36,9 +36,9 @@ OUTPUT=""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
-    --platform)
+    --platform|-p)
       PLATFORM="${2:-}"; shift 2 ;;
-    --output)
+    --output|-o)
       OUTPUT="${2:-}"; shift 2 ;;
     *) fail "Unknown argument: $1" ;;
   esac
