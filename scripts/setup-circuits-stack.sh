@@ -85,14 +85,16 @@ echo "Workspace: ${ROOT_DIR}"
 LINUX_PLATFORM="linux-x86_64"
 
 echo "Installing Linux bundle for Docker image into ${STACK_DIR}"
-stage_real="$(python3 - <<'PY'
+stage_real="$(python3 - "${LINUX_STAGE_DIR}" <<'PY'
 import os, sys
 print(os.path.realpath(sys.argv[1]))
-PY "${LINUX_STAGE_DIR}")"
-stack_real="$(python3 - <<'PY'
+PY
+)"
+stack_real="$(python3 - "${STACK_DIR}" <<'PY'
 import os, sys
 print(os.path.realpath(sys.argv[1]))
-PY "${STACK_DIR}")"
+PY
+)"
 
 if [ "$stage_real" = "$stack_real" ]; then
   # No staging copy needed; install directly into STACK_DIR.
