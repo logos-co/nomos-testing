@@ -178,11 +178,36 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
+      - name: Restore cached nomos binaries
+        id: restore-nomos-bins-host
+        uses: actions/cache@v4
+        with:
+          path: ${{ github.workspace }}/.tmp/nomos-binaries.tar.gz
+          key: ${{ runner.os }}-nomos-binaries-${{ env.NOMOS_NODE_REV }}-${{ env.NOMOS_BUNDLE_VERSION }}
+
+      - name: Download nomos binaries artifact (fallback)
+        if: steps.restore-nomos-bins-host.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ARTIFACT_NAME: nomos-binaries-${{ runner.os }}-${{ env.NOMOS_NODE_REV }}-${{ env.NOMOS_BUNDLE_VERSION }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${TMPDIR}"
+          artifact_id=$(gh api -X GET "repos/${GITHUB_REPOSITORY}/actions/artifacts" --paginate -F per_page=100 \
+            --jq '.artifacts[] | select(.name=="'"${ARTIFACT_NAME}"'") | .id' | head -n1)
+          if [ -z "$artifact_id" ]; then
+            echo "Nomos binaries artifact ${ARTIFACT_NAME} not found. Run build-binaries workflow." >&2
+            exit 1
+          fi
+          gh api -X GET "repos/${GITHUB_REPOSITORY}/actions/artifacts/${artifact_id}/zip" > "${TMPDIR}/nomos-binaries.zip"
+          unzip -o "${TMPDIR}/nomos-binaries.zip" -d "${TMPDIR}"
+          mv "${TMPDIR}/nomos-binaries.tar.gz" "${GITHUB_WORKSPACE}/.tmp/nomos-binaries.tar.gz"
       - name: Run host demo (scripted)
         env:
           NOMOS_TESTS_KEEP_LOGS: "true"
           RUST_LOG: "info"
           NOMOS_LOG_DIR: "${{ runner.temp }}/local-logs"
+          NOMOS_BINARIES_TAR: "${{ github.workspace }}/.tmp/nomos-binaries.tar.gz"
         run: |
           scripts/run-examples.sh -t 60 -v 1 -e 1 host
       - name: Collect local demo logs (on failure)
