@@ -116,11 +116,5 @@ cp "${HOST_EXEC_BIN}" "${bundle_dir}/artifacts/"
 cp "${HOST_CLI_BIN}" "${bundle_dir}/artifacts/"
 
 mkdir -p "$(dirname "${OUTPUT}")"
-if tar --help 2>/dev/null | grep -q -- '--no-mac-metadata'; then
-  tar --no-mac-metadata --no-xattrs -czf "${OUTPUT}" -C "${bundle_dir}" artifacts
-elif tar --help 2>/dev/null | grep -q -- '--no-xattrs'; then
-  tar --no-xattrs -czf "${OUTPUT}" -C "${bundle_dir}" artifacts
-else
-  tar -czf "${OUTPUT}" -C "${bundle_dir}" artifacts
-fi
+tar --no-mac-metadata --no-xattrs -czf "${OUTPUT}" -C "${bundle_dir}" artifacts
 echo "Bundle created at ${OUTPUT}"

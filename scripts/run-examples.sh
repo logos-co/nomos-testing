@@ -116,36 +116,10 @@ if [ -z "${DEMO_VALIDATORS}" ] || [ -z "${DEMO_EXECUTORS}" ]; then
   fail_with_usage "validators and executors must be provided via -v/--validators and -e/--executors"
 fi
 
-choose_tar_path() {
-  if [ -n "${NOMOS_BINARIES_TAR:-}" ]; then
-    echo "${NOMOS_BINARIES_TAR}"
-    return
-  fi
-  if [ "$MODE" = "host" ]; then
-    local candidate
-    candidate="$(ls "${ROOT_DIR}"/.tmp/nomos-binaries-host-*.tar.gz 2>/dev/null | head -n1 || true)"
-    if [ -n "$candidate" ]; then
-      echo "$candidate"
-      return
-    fi
-  else
-    local candidate
-    candidate="$(ls "${ROOT_DIR}"/.tmp/nomos-binaries-linux-*.tar.gz 2>/dev/null | head -n1 || true)"
-    if [ -n "$candidate" ]; then
-      echo "$candidate"
-      return
-    fi
-  fi
-  if [ -f "${ROOT_DIR}/.tmp/nomos-binaries.tar.gz" ]; then
-    echo "${ROOT_DIR}/.tmp/nomos-binaries.tar.gz"
-  fi
-}
-
 restore_binaries_from_tar() {
-  local tar_path
-  tar_path="$(choose_tar_path)"
+  local tar_path="${NOMOS_BINARIES_TAR:-${ROOT_DIR}/.tmp/nomos-binaries.tar.gz}"
   local extract_dir="${ROOT_DIR}/.tmp/nomos-binaries"
-  if [ -z "$tar_path" ] || [ ! -f "$tar_path" ]; then
+  if [ ! -f "$tar_path" ]; then
     return 1
   fi
   echo "==> Restoring binaries from ${tar_path}"
@@ -181,24 +155,6 @@ restore_binaries_from_tar() {
 }
 
 ensure_host_binaries() {
-  host_bin_matches_arch() {
-    local bin_path="$1"
-    if [ ! -x "$bin_path" ]; then
-      return 1
-    fi
-    local info expected
-    info="$(file -b "$bin_path" 2>/dev/null || true)"
-    case "$(uname -m)" in
-      x86_64) expected="x86-64|x86_64" ;;
-      aarch64|arm64) expected="arm64|aarch64" ;;
-      *) expected="" ;;
-    esac
-    if [ -n "$expected" ] && echo "$info" | grep -Eqi "$expected"; then
-      return 0
-    fi
-    return 1
-  }
-
   # Build nomos-node/nomos-executor for the host if not already present.
   HOST_SRC="${ROOT_DIR}/.tmp/nomos-node-host-src"
   HOST_TARGET="${ROOT_DIR}/.tmp/nomos-node-host-target"
@@ -212,7 +168,7 @@ ensure_host_binaries() {
     return
   fi
 
-  if host_bin_matches_arch "${HOST_NODE_BIN_DEFAULT}" && host_bin_matches_arch "${HOST_EXEC_BIN_DEFAULT}"; then
+  if [ -x "${HOST_NODE_BIN_DEFAULT}" ] && [ -x "${HOST_EXEC_BIN_DEFAULT}" ]; then
     echo "Host binaries already built at ${HOST_TARGET}"
     NOMOS_NODE_BIN="${HOST_NODE_BIN_DEFAULT}"
     NOMOS_EXECUTOR_BIN="${HOST_EXEC_BIN_DEFAULT}"
@@ -273,7 +229,7 @@ fi
 
 if [ "$MODE" != "host" ]; then
   if [ "${RESTORED_BINARIES}" -ne 1 ]; then
-    fail_with_usage "NOMOS_BINARIES_TAR not restored; compose/k8s require a bundle (scripts/build-bundle.sh --platform linux)"
+    echo "WARNING: NOMOS_BINARIES_TAR not restored; compose/k8s will rebuild binaries from source" >&2
   fi
   if [ "${NOMOS_SKIP_IMAGE_BUILD:-0}" = "1" ]; then
     echo "==> Skipping testnet image rebuild (NOMOS_SKIP_IMAGE_BUILD=1)"
@@ -284,18 +240,20 @@ if [ "$MODE" != "host" ]; then
 fi
 
 if [ "$MODE" = "host" ]; then
-  if [ "${RESTORED_BINARIES}" -ne 1 ]; then
-    fail_with_usage "NOMOS_BINARIES_TAR not restored; host runs require a bundle (scripts/build-bundle.sh --platform host)"
-  fi
-  tar_node="${ROOT_DIR}/testing-framework/assets/stack/bin/nomos-node"
-  tar_exec="${ROOT_DIR}/testing-framework/assets/stack/bin/nomos-executor"
-  if [ -x "${tar_node}" ] && [ -x "${tar_exec}" ]; then
-    echo "==> Using restored host binaries from tarball"
-    NOMOS_NODE_BIN="${tar_node}"
-    NOMOS_EXECUTOR_BIN="${tar_exec}"
-    export NOMOS_NODE_BIN NOMOS_EXECUTOR_BIN
+  if [ "${RESTORED_BINARIES}" -eq 1 ] && [ "$(uname -s)" = "Linux" ]; then
+    tar_node="${ROOT_DIR}/testing-framework/assets/stack/bin/nomos-node"
+    tar_exec="${ROOT_DIR}/testing-framework/assets/stack/bin/nomos-executor"
+    if [ -x "${tar_node}" ] && [ -x "${tar_exec}" ]; then
+      echo "==> Using restored host binaries from tarball"
+      NOMOS_NODE_BIN="${tar_node}"
+      NOMOS_EXECUTOR_BIN="${tar_exec}"
+      export NOMOS_NODE_BIN NOMOS_EXECUTOR_BIN
+    else
+      echo "Restored tarball missing executables for host; building host binaries..."
+      ensure_host_binaries
+    fi
   else
-    fail_with_usage "Restored NOMOS_BINARIES_TAR is missing host executables"
+    ensure_host_binaries
   fi
 fi
 
