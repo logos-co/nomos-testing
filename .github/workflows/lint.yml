@@ -213,14 +213,14 @@ jobs:
         id: restore-nomos-bins-host
         uses: actions/cache@v4
         with:
-          path: ${{ github.workspace }}/.tmp/nomos-binaries-host-${{ env.VERSION }}.tar.gz
-          key: ${{ runner.os }}-nomos-binaries-host-${{ env.VERSION }}-${{ env.NOMOS_BUNDLE_VERSION }}
+          path: ${{ github.workspace }}/.tmp/nomos-binaries.tar.gz
+          key: ${{ runner.os }}-nomos-binaries-${{ env.VERSION }}-${{ env.NOMOS_BUNDLE_VERSION }}
 
       - name: Download nomos binaries artifact (fallback)
         if: steps.restore-nomos-bins-host.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ARTIFACT_NAME: nomos-binaries-host-${{ env.VERSION }}-${{ env.NOMOS_BUNDLE_VERSION }}
+          ARTIFACT_NAME: nomos-binaries-${{ runner.os }}-${{ env.VERSION }}-${{ env.NOMOS_BUNDLE_VERSION }}
         run: |
           set -euo pipefail
           mkdir -p "${TMPDIR}"
@@ -239,12 +239,12 @@ jobs:
             exit 1
           fi
           mkdir -p "${GITHUB_WORKSPACE}/.tmp"
-          mv "$found_tar" "${GITHUB_WORKSPACE}/.tmp/nomos-binaries-host-${VERSION}.tar.gz"
+          mv "$found_tar" "${GITHUB_WORKSPACE}/.tmp/nomos-binaries.tar.gz"
       - name: Normalize host bundle path
         run: |
           set -euo pipefail
           mkdir -p .tmp
-          SRC="${GITHUB_WORKSPACE}/.tmp/nomos-binaries-host-${VERSION}.tar.gz"
+          SRC="${GITHUB_WORKSPACE}/.tmp/nomos-binaries.tar.gz"
           DEST="${GITHUB_WORKSPACE}/.tmp/nomos-binaries-host-${VERSION}.tar.gz"
           if [ -f "${SRC}" ]; then
             mv "${SRC}" "${DEST}"
@@ -313,13 +313,13 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ${{ github.workspace }}/.tmp/nomos-binaries.tar.gz
-          key: ${{ runner.os }}-nomos-binaries-${{ env.NOMOS_NODE_REV }}-${{ env.NOMOS_BUNDLE_VERSION }}
+          key: ${{ runner.os }}-nomos-binaries-${{ env.VERSION }}-${{ env.NOMOS_BUNDLE_VERSION }}
 
       - name: Download nomos binaries artifact (fallback)
         if: steps.restore-nomos-bins.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ARTIFACT_NAME: nomos-binaries-${{ runner.os }}-${{ env.NOMOS_NODE_REV }}-${{ env.NOMOS_BUNDLE_VERSION }}
+          ARTIFACT_NAME: nomos-binaries-${{ runner.os }}-${{ env.VERSION }}-${{ env.NOMOS_BUNDLE_VERSION }}
         run: |
           set -euo pipefail
           download_dir="${TMPDIR}/nomos-binaries-download"

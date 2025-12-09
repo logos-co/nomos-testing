@@ -1,4 +1,4 @@
-use std::time::Duration;
+use std::{env, time::Duration};
 
 use nomos_libp2p::{
     IdentifySettings, KademliaSettings, Multiaddr, NatSettings, ed25519, gossipsub,
@@ -36,6 +36,19 @@ fn default_swarm_config() -> SwarmConfig {
     }
 }
 
+fn nat_settings(port: u16) -> NatSettings {
+    if env::var("NOMOS_USE_AUTONAT").is_ok() {
+        return NatSettings::default();
+    }
+
+    let addr: Multiaddr = format!("/ip4/127.0.0.1/udp/{port}/quic-v1")
+        .parse()
+        .expect("failed to build loopback multiaddr");
+    NatSettings::Static {
+        external_address: addr,
+    }
+}
+
 #[must_use]
 pub fn create_network_configs(
     ids: &[[u8; 32]],
@@ -48,12 +61,14 @@ pub fn create_network_configs(
             let node_key = ed25519::SecretKey::try_from_bytes(&mut node_key_bytes)
                 .expect("Failed to generate secret key from bytes");
 
+            let port = get_available_udp_port().unwrap();
             SwarmConfig {
                 node_key,
-                port: get_available_udp_port().unwrap(),
+                port,
                 chain_sync_config: cryptarchia_sync::Config {
                     peer_response_timeout: Duration::from_secs(60),
                 },
+                nat_config: nat_settings(port),
                 ..default_swarm_config()
             }
         })
