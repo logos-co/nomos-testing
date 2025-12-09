@@ -78,42 +78,49 @@ if [ "$PLATFORM" = "linux" ] && [ "$(uname -s)" != "Linux" ] && [ -z "${BUNDLE_I
 fi
 
 echo "==> Preparing circuits (version ${VERSION})"
-HOST_BUNDLE_PATH="${ROOT_DIR}/testing-framework/assets/stack/kzgrs_test_params"
+if [ "$PLATFORM" = "host" ]; then
+  CIRCUITS_DIR="${ROOT_DIR}/.tmp/nomos-circuits-host"
+  NODE_SRC="${ROOT_DIR}/.tmp/nomos-node-host-src"
+  NODE_TARGET="${ROOT_DIR}/.tmp/nomos-node-host-target"
+else
+  CIRCUITS_DIR="${ROOT_DIR}/.tmp/nomos-circuits-linux"
+  NODE_SRC="${ROOT_DIR}/.tmp/nomos-node-linux-src"
+  NODE_TARGET="${ROOT_DIR}/.tmp/nomos-node-linux-target"
+fi
+export NOMOS_CIRCUITS="${CIRCUITS_DIR}"
 mkdir -p "${ROOT_DIR}/.tmp"
 "${ROOT_DIR}/scripts/setup-circuits-stack.sh" "${VERSION}" </dev/null
 
-HOST_SRC="${ROOT_DIR}/.tmp/nomos-node-host-src"
-HOST_TARGET="${ROOT_DIR}/.tmp/nomos-node-host-target"
-HOST_NODE_BIN="${HOST_TARGET}/debug/nomos-node"
-HOST_EXEC_BIN="${HOST_TARGET}/debug/nomos-executor"
-HOST_CLI_BIN="${HOST_TARGET}/debug/nomos-cli"
+NODE_BIN="${NODE_TARGET}/debug/nomos-node"
+EXEC_BIN="${NODE_TARGET}/debug/nomos-executor"
+CLI_BIN="${NODE_TARGET}/debug/nomos-cli"
 
 echo "==> Building host binaries (platform=${PLATFORM})"
-mkdir -p "${HOST_SRC}"
-if [ ! -d "${HOST_SRC}/.git" ]; then
-  git clone https://github.com/logos-co/nomos-node.git "${HOST_SRC}"
+mkdir -p "${NODE_SRC}"
+if [ ! -d "${NODE_SRC}/.git" ]; then
+  git clone https://github.com/logos-co/nomos-node.git "${NODE_SRC}"
 fi
 (
-  cd "${HOST_SRC}"
+  cd "${NODE_SRC}"
   git fetch --depth 1 origin "${NOMOS_NODE_REV}"
   git checkout "${NOMOS_NODE_REV}"
   git reset --hard
   git clean -fdx
-  RUSTFLAGS='--cfg feature="pol-dev-mode"' NOMOS_CIRCUITS="${HOST_BUNDLE_PATH}" \
+  RUSTFLAGS='--cfg feature="pol-dev-mode"' NOMOS_CIRCUITS="${CIRCUITS_DIR}" \
     cargo build --features testing \
     -p nomos-node -p nomos-executor -p nomos-cli \
-    --target-dir "${HOST_TARGET}"
+    --target-dir "${NODE_TARGET}"
 )
 
 echo "==> Packaging bundle"
 bundle_dir="${ROOT_DIR}/.tmp/nomos-bundle"
 rm -rf "${bundle_dir}"
 mkdir -p "${bundle_dir}/artifacts/circuits"
-cp -a "${HOST_BUNDLE_PATH}/." "${bundle_dir}/artifacts/circuits/"
+cp -a "${CIRCUITS_DIR}/." "${bundle_dir}/artifacts/circuits/"
 mkdir -p "${bundle_dir}/artifacts"
-cp "${HOST_NODE_BIN}" "${bundle_dir}/artifacts/"
-cp "${HOST_EXEC_BIN}" "${bundle_dir}/artifacts/"
-cp "${HOST_CLI_BIN}" "${bundle_dir}/artifacts/"
+cp "${NODE_BIN}" "${bundle_dir}/artifacts/"
+cp "${EXEC_BIN}" "${bundle_dir}/artifacts/"
+cp "${CLI_BIN}" "${bundle_dir}/artifacts/"
 
 mkdir -p "$(dirname "${OUTPUT}")"
 if tar --help 2>/dev/null | grep -q -- '--no-mac-metadata'; then
