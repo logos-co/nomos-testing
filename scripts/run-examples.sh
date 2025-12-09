@@ -229,7 +229,7 @@ fi
 
 if [ "$MODE" != "host" ]; then
   if [ "${RESTORED_BINARIES}" -ne 1 ]; then
-    fail_with_usage "NOMOS_BINARIES_TAR is required for compose/k8s (run scripts/build-bundle.sh --platform linux)"
+    echo "WARNING: NOMOS_BINARIES_TAR not restored; compose/k8s will rebuild binaries from source" >&2
   fi
   if [ "${NOMOS_SKIP_IMAGE_BUILD:-0}" = "1" ]; then
     echo "==> Skipping testnet image rebuild (NOMOS_SKIP_IMAGE_BUILD=1)"
@@ -253,9 +253,6 @@ if [ "$MODE" = "host" ]; then
       ensure_host_binaries
     fi
   else
-    if [ -z "${NOMOS_BINARIES_TAR:-}" ]; then
-      fail_with_usage "NOMOS_BINARIES_TAR is required for host runs (run scripts/build-bundle.sh --platform host)"
-    fi
     ensure_host_binaries
   fi
 fi
