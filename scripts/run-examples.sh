@@ -227,7 +227,10 @@ if [ ! -f "${KZG_HOST_PATH}" ]; then
   "${ROOT_DIR}/scripts/setup-circuits-stack.sh" "${VERSION}"
 fi
 
-if [ "$MODE" != "local" ]; then
+if [ "$MODE" != "host" ]; then
+  if [ "${RESTORED_BINARIES}" -ne 1 ]; then
+    fail_with_usage "NOMOS_BINARIES_TAR is required for compose/k8s (run scripts/build-bundle.sh --platform linux)"
+  fi
   if [ "${NOMOS_SKIP_IMAGE_BUILD:-0}" = "1" ]; then
     echo "==> Skipping testnet image rebuild (NOMOS_SKIP_IMAGE_BUILD=1)"
   else
@@ -236,8 +239,25 @@ if [ "$MODE" != "local" ]; then
   fi
 fi
 
-if [ "$MODE" = "local" ]; then
-  ensure_host_binaries
+if [ "$MODE" = "host" ]; then
+  if [ "${RESTORED_BINARIES}" -eq 1 ] && [ "$(uname -s)" = "Linux" ]; then
+    tar_node="${ROOT_DIR}/testing-framework/assets/stack/bin/nomos-node"
+    tar_exec="${ROOT_DIR}/testing-framework/assets/stack/bin/nomos-executor"
+    if [ -x "${tar_node}" ] && [ -x "${tar_exec}" ]; then
+      echo "==> Using restored host binaries from tarball"
+      NOMOS_NODE_BIN="${tar_node}"
+      NOMOS_EXECUTOR_BIN="${tar_exec}"
+      export NOMOS_NODE_BIN NOMOS_EXECUTOR_BIN
+    else
+      echo "Restored tarball missing executables for host; building host binaries..."
+      ensure_host_binaries
+    fi
+  else
+    if [ -z "${NOMOS_BINARIES_TAR:-}" ]; then
+      fail_with_usage "NOMOS_BINARIES_TAR is required for host runs (run scripts/build-bundle.sh --platform host)"
+    fi
+    ensure_host_binaries
+  fi
 fi
 
 echo "==> Running ${BIN} for ${RUN_SECS}s"
