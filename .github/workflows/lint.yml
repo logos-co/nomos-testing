@@ -178,13 +178,13 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
-      - name: Run local demo (scripted)
+      - name: Run host demo (scripted)
         env:
           NOMOS_TESTS_KEEP_LOGS: "true"
           RUST_LOG: "info"
           NOMOS_LOG_DIR: "${{ runner.temp }}/local-logs"
         run: |
-          scripts/run-demo.sh local 60
+          scripts/run-examples.sh -t 60 -v 1 -e 1 host
       - name: Collect local demo logs (on failure)
         if: failure()
         run: |
@@ -306,7 +306,7 @@ jobs:
           NOMOS_BINARIES_TAR: "${{ github.workspace }}/.tmp/nomos-binaries.tar.gz"
         run: |
           mkdir -p "$TMPDIR"
-          scripts/run-demo.sh compose 60
+          scripts/run-examples.sh -t 60 -v 1 -e 1 compose
 
       - name: Collect compose logs
         if: failure()

@@ -48,34 +48,10 @@ jobs:
             ~/.cargo/git
           key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: ${{ runner.os }}-cargo-
-      - name: Build nomos binaries
+      - name: Build nomos binaries bundle
         run: |
-          SRC_DIR="${GITHUB_WORKSPACE}/.tmp/nomos-node-src"
-          mkdir -p "$SRC_DIR"
-          if [ ! -d "$SRC_DIR/.git" ]; then
-            git clone https://github.com/logos-co/nomos-node.git "$SRC_DIR"
-          fi
-          cd "$SRC_DIR"
-          git fetch --depth 1 origin "${NOMOS_NODE_REV}"
-          git checkout "${NOMOS_NODE_REV}"
-          git reset --hard
-          git clean -fdx
-          # Align CI with the host build path: refresh dependency lock to latest compatible
-          # crates (we still pin flate2 below). This mirrors the local script that drops
-          # Cargo.lock before building.
-          cargo +nightly-2025-09-14 update
-          # Work around flate2 1.1.6 ambiguity issues by pinning to a fixed release.
-          cargo +nightly-2025-09-14 update -p flate2 --precise 1.1.5
-          cargo +nightly-2025-09-14 build --all-features --bins
-      - name: Package binaries
-        run: |
-          mkdir -p artifacts
-          cp "${CARGO_TARGET_DIR}/debug/nomos-node" artifacts/
-          cp "${CARGO_TARGET_DIR}/debug/nomos-executor" artifacts/
-          cp "${CARGO_TARGET_DIR}/debug/nomos-cli" artifacts/
-          mkdir -p artifacts/circuits
-          rsync -a "$NOMOS_CIRCUITS"/ artifacts/circuits/
-          tar -czf nomos-binaries.tar.gz -C artifacts .
+          chmod +x scripts/build-bundle.sh
+          scripts/build-bundle.sh --platform linux --output nomos-binaries.tar.gz
       - name: Save nomos binaries cache
         uses: actions/cache@v4
         with:

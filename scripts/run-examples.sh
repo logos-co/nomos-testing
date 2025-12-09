@@ -4,9 +4,9 @@ set -euo pipefail
 # All-in-one helper: prepare circuits (Linux + host), rebuild the image, and run
 # the chosen runner binary.
 #
-# Usage: scripts/run-demo.sh [options] [compose|local|k8s]
+# Usage: scripts/run-examples.sh [options] [compose|host|k8s]
 #   compose -> runs examples/src/bin/compose_runner.rs (default)
-#   local   -> runs examples/src/bin/local_runner.rs
+#   host    -> runs examples/src/bin/local_runner.rs
 #   k8s     -> runs examples/src/bin/k8s_runner.rs
 #   run-seconds must be provided via -t/--run-seconds
 #
@@ -19,11 +19,11 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF'
-Usage: scripts/run-demo.sh [options] [compose|local|k8s]
+Usage: scripts/run-examples.sh [options] [compose|host|k8s]
 
 Modes:
   compose   Run examples/src/bin/compose_runner.rs (default)
-  local     Run examples/src/bin/local_runner.rs
+  host      Run examples/src/bin/local_runner.rs
   k8s       Run examples/src/bin/k8s_runner.rs
 
 Options:
