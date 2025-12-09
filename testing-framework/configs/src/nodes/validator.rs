@@ -85,6 +85,6 @@ pub fn create_validator_config(config: GeneralConfig) -> ValidatorConfig {
         sdp: SdpSettings { declaration: None },
         testing_http: testing_http_config(&config),
         wallet: wallet_settings(&config),
-        key_management: config.kms_config,
+        key_management: config.kms_config.clone(),
     }
 }

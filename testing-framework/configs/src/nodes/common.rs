@@ -105,12 +105,20 @@ pub(crate) fn cryptarchia_config(config: &GeneralConfig) -> CryptarchiaConfig {
     }
 }
 
+fn kzg_params_path(raw: &str) -> String {
+    let path = PathBuf::from(raw);
+    if path.is_dir() {
+        return path.join("kzgrs_test_params").to_string_lossy().to_string();
+    }
+    path.to_string_lossy().to_string()
+}
+
 pub(crate) fn da_verifier_config(
     config: &GeneralConfig,
 ) -> DaVerifierServiceSettings<KzgrsDaVerifierSettings, (), (), VerifierStorageAdapterSettings> {
     DaVerifierServiceSettings {
         share_verifier_settings: KzgrsDaVerifierSettings {
-            global_params_path: config.da_config.global_params_path.clone(),
+            global_params_path: kzg_params_path(&config.da_config.global_params_path),
             domain_size: config.da_config.num_subnets as usize,
         },
         tx_verifier_settings: (),
@@ -138,7 +146,7 @@ pub(crate) fn da_sampling_config(
             blobs_validity_duration: config.da_config.blobs_validity_duration,
         },
         share_verifier_settings: SamplingVerifierSettings {
-            global_params_path: config.da_config.global_params_path.clone(),
+            global_params_path: kzg_params_path(&config.da_config.global_params_path),
             domain_size: config.da_config.num_subnets as usize,
         },
         commitments_wait_duration: Duration::from_secs(1),

@@ -99,7 +99,7 @@ pub fn create_executor_config(config: GeneralConfig) -> ExecutorConfig {
         mempool: mempool_config(),
         sdp: SdpSettings { declaration: None },
         wallet: wallet_settings(&config),
+        key_management: config.kms_config.clone(),
         testing_http: testing_http_config(&config),
-        key_management: config.kms_config,
     }
 }
