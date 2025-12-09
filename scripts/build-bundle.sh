@@ -65,6 +65,7 @@ if [ "$PLATFORM" = "linux" ] && [ "$(uname -s)" != "Linux" ] && [ -z "${BUNDLE_I
   docker run --rm \
     -e VERSION="$VERSION" \
     -e NOMOS_NODE_REV="$NOMOS_NODE_REV" \
+    -e NOMOS_CIRCUITS="/workspace/.tmp/nomos-circuits-linux" \
     -e BUNDLE_IN_CONTAINER=1 \
     -e CARGO_HOME=/workspace/.tmp/cargo-linux \
     -e CARGO_TARGET_DIR=/workspace/.tmp/nomos-node-linux-target \
@@ -88,7 +89,7 @@ else
   NODE_TARGET="${ROOT_DIR}/.tmp/nomos-node-linux-target"
 fi
 export NOMOS_CIRCUITS="${CIRCUITS_DIR}"
-mkdir -p "${ROOT_DIR}/.tmp"
+mkdir -p "${ROOT_DIR}/.tmp" "${CIRCUITS_DIR}"
 "${ROOT_DIR}/scripts/setup-circuits-stack.sh" "${VERSION}" </dev/null
 
 NODE_BIN="${NODE_TARGET}/debug/nomos-node"
