@@ -62,6 +62,7 @@ if [ -z "${OUTPUT}" ]; then
 elif [[ "${OUTPUT}" != /* ]]; then
   OUTPUT="${ROOT_DIR}/${OUTPUT#./}"
 fi
+echo "Bundle output: ${OUTPUT}"
 
 if [ "$PLATFORM" = "linux" ] && [ "$(uname -s)" != "Linux" ] && [ -z "${BUNDLE_IN_CONTAINER:-}" ]; then
   # Re-run inside a Linux container to produce Linux binaries.
