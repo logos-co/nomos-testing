@@ -5,6 +5,7 @@
 ARG VERSION=v0.3.1
 ARG CIRCUITS_OVERRIDE
 ARG NOMOS_NODE_REV=d2dd5a5084e1daef4032562c77d41de5e4d495f8
+ARG CIRCUITS_PLATFORM=linux-x86_64
 
 # ===========================
 # BUILD IMAGE
@@ -15,6 +16,7 @@ FROM rust:1.91.0-slim-bookworm AS builder
 ARG VERSION
 ARG CIRCUITS_OVERRIDE
 ARG NOMOS_NODE_REV
+ARG CIRCUITS_PLATFORM
 
 LABEL maintainer="augustinas@status.im" \
     source="https://github.com/logos-co/nomos-node" \
@@ -71,6 +73,7 @@ RUN mkdir -p /opt/circuits && \
     if [ ! -f "/opt/circuits/pol/verification_key.json" ]; then \
         echo "Local circuits missing pol artifacts; downloading ${VERSION} bundle and rebuilding"; \
         chmod +x scripts/setup-nomos-circuits.sh && \
+        NOMOS_CIRCUITS_PLATFORM="${CIRCUITS_PLATFORM}" \
         NOMOS_CIRCUITS_REBUILD_RAPIDSNARK=1 \
         RAPIDSNARK_BUILD_GMP=1 \
             scripts/setup-nomos-circuits.sh "$VERSION" "/opt/circuits"; \

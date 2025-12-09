@@ -19,17 +19,27 @@ IMAGE_TAG="${IMAGE_TAG:-nomos-testnet:local}"
 VERSION="${VERSION:-v0.3.1}"
 KZG_DIR_REL="${NOMOS_KZG_DIR_REL:-testing-framework/assets/stack/kzgrs_test_params}"
 CIRCUITS_OVERRIDE="${CIRCUITS_OVERRIDE:-${KZG_DIR_REL}}"
+CIRCUITS_PLATFORM="${CIRCUITS_PLATFORM:-${COMPOSE_CIRCUITS_PLATFORM:-}}"
+if [ -z "${CIRCUITS_PLATFORM}" ]; then
+  case "$(uname -m)" in
+    x86_64) CIRCUITS_PLATFORM="linux-x86_64" ;;
+    arm64|aarch64) CIRCUITS_PLATFORM="linux-aarch64" ;;
+    *) CIRCUITS_PLATFORM="linux-x86_64" ;;
+  esac
+fi
 NOMOS_NODE_REV="${NOMOS_NODE_REV:-d2dd5a5084e1daef4032562c77d41de5e4d495f8}"
 
 echo "Workspace root: ${ROOT_DIR}"
 echo "Image tag: ${IMAGE_TAG}"
 echo "Circuits override: ${CIRCUITS_OVERRIDE:-<none>}"
 echo "Circuits version (fallback download): ${VERSION}"
+echo "Circuits platform: ${CIRCUITS_PLATFORM}"
 
 build_args=(
   -f "${DOCKERFILE_PATH}"
   -t "${IMAGE_TAG}"
   --build-arg "NOMOS_NODE_REV=${NOMOS_NODE_REV}"
+  --build-arg "CIRCUITS_PLATFORM=${CIRCUITS_PLATFORM}"
   "${ROOT_DIR}"
 )
 

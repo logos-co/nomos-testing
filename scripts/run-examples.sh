@@ -306,7 +306,8 @@ if [ "$MODE" != "host" ]; then
     echo "==> Skipping testnet image rebuild (NOMOS_SKIP_IMAGE_BUILD=1)"
   else
     echo "==> Rebuilding testnet image (${IMAGE})"
-    IMAGE_TAG="${IMAGE}" "${ROOT_DIR}/testing-framework/assets/stack/scripts/build_test_image.sh"
+    IMAGE_TAG="${IMAGE}" COMPOSE_CIRCUITS_PLATFORM="${COMPOSE_CIRCUITS_PLATFORM:-}" \
+      "${ROOT_DIR}/testing-framework/assets/stack/scripts/build_test_image.sh"
   fi
 fi
 
