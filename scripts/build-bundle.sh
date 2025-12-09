@@ -32,6 +32,9 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 if [ -f "${ROOT_DIR}/versions.env" ]; then
   # shellcheck disable=SC1091
   . "${ROOT_DIR}/versions.env"
+else
+  echo "ERROR: versions.env missing; run from repo root or restore the file." >&2
+  exit 1
 fi
 DEFAULT_VERSION="${VERSION:-v0.3.1}"
 DEFAULT_NODE_REV="${NOMOS_NODE_REV:-d2dd5a5084e1daef4032562c77d41de5e4d495f8}"

@@ -5,8 +5,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  NOMOS_NODE_REV: d2dd5a5084e1daef4032562c77d41de5e4d495f8
-  NOMOS_BUNDLE_VERSION: v4
 
 jobs:
   build_nomos_binaries:
@@ -37,7 +35,7 @@ jobs:
           sudo apt-get install -y clang llvm-dev libclang-dev pkg-config cmake libssl-dev rsync libgmp10 libgmp-dev libgomp1 nasm
       - name: Install nomos circuits
         run: |
-          ./scripts/setup-nomos-circuits.sh v0.3.1 "$NOMOS_CIRCUITS"
+          ./scripts/setup-nomos-circuits.sh "${VERSION}" "$NOMOS_CIRCUITS"
           echo "NOMOS_CIRCUITS=$NOMOS_CIRCUITS" >> "$GITHUB_ENV"
       - name: Add top-level KZG params file
         run: |

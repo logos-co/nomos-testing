@@ -7,8 +7,6 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  NOMOS_NODE_REV: d2dd5a5084e1daef4032562c77d41de5e4d495f8
-  NOMOS_BUNDLE_VERSION: v4
 permissions:
   actions: read
   contents: read
@@ -31,7 +29,7 @@ jobs:
           fi
       - name: Install nomos circuits
         run: |
-          ./scripts/setup-nomos-circuits.sh v0.3.1 "$HOME/.nomos-circuits"
+          ./scripts/setup-nomos-circuits.sh "${VERSION}" "$HOME/.nomos-circuits"
           echo "NOMOS_CIRCUITS=$HOME/.nomos-circuits" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@master
         with:
@@ -62,7 +60,7 @@ jobs:
           fi
       - name: Install nomos circuits
         run: |
-          ./scripts/setup-nomos-circuits.sh v0.3.1 "$HOME/.nomos-circuits"
+          ./scripts/setup-nomos-circuits.sh "${VERSION}" "$HOME/.nomos-circuits"
           echo "NOMOS_CIRCUITS=$HOME/.nomos-circuits" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@master
         with:
@@ -93,7 +91,7 @@ jobs:
           fi
       - name: Install nomos circuits
         run: |
-          ./scripts/setup-nomos-circuits.sh v0.3.1 "$HOME/.nomos-circuits"
+          ./scripts/setup-nomos-circuits.sh "${VERSION}" "$HOME/.nomos-circuits"
           echo "NOMOS_CIRCUITS=$HOME/.nomos-circuits" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@master
         with:

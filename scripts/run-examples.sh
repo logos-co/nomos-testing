@@ -59,10 +59,12 @@ if [ -n "${NOMOS_BINARIES_TAR:-}" ] && [ ! -f "${NOMOS_BINARIES_TAR}" ]; then
 fi
 
 readonly ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-if [ -f "${ROOT_DIR}/versions.env" ]; then
-  # shellcheck disable=SC1091
-  . "${ROOT_DIR}/versions.env"
+if [ ! -f "${ROOT_DIR}/versions.env" ]; then
+  echo "ERROR: versions.env missing; run from repo root or restore the file." >&2
+  exit 1
 fi
+# shellcheck disable=SC1091
+. "${ROOT_DIR}/versions.env"
 if [ -f "${ROOT_DIR}/paths.env" ]; then
   # shellcheck disable=SC1091
   . "${ROOT_DIR}/paths.env"

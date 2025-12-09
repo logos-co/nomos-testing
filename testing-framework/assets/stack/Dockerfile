@@ -2,10 +2,10 @@
 # check=skip=SecretsUsedInArgOrEnv
 # Ignore warnings about sensitive information as this is test data.
 
-ARG VERSION=v0.3.1
+ARG VERSION
 ARG CIRCUITS_OVERRIDE
-ARG NOMOS_NODE_REV=d2dd5a5084e1daef4032562c77d41de5e4d495f8
-ARG CIRCUITS_PLATFORM=linux-x86_64
+ARG NOMOS_NODE_REV
+ARG CIRCUITS_PLATFORM
 
 # ===========================
 # BUILD IMAGE
