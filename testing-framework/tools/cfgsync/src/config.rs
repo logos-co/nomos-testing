@@ -6,10 +6,7 @@ use key_management_system_service::{
     backend::preload::PreloadKMSBackendSettings,
     keys::{Ed25519Key, Key, ZkKey},
 };
-use nomos_core::{
-    mantle::GenesisTx as _,
-    sdp::{Locator, ServiceType},
-};
+use nomos_core::mantle::GenesisTx as _;
 use nomos_libp2p::{Multiaddr, PeerId, ed25519};
 use nomos_tracing_service::{LoggerLayer, MetricsLayer, TracingLayer, TracingSettings};
 use nomos_utils::net::get_available_udp_port;
@@ -19,10 +16,7 @@ use testing_framework_config::topology::configs::{
     api::GeneralApiConfig,
     blend::{GeneralBlendConfig, create_blend_configs},
     bootstrap::{SHORT_PROLONGED_BOOTSTRAP_PERIOD, create_bootstrap_configs},
-    consensus::{
-        ConsensusParams, GeneralConsensusConfig, ProviderInfo, create_consensus_configs,
-        create_genesis_tx_with_declarations,
-    },
+    consensus::{ConsensusParams, create_consensus_configs, create_genesis_tx_with_declarations},
     da::{DaParams, GeneralDaConfig, create_da_configs},
     network::{NetworkParams, create_network_configs},
     time::default_time_config,
@@ -31,7 +25,10 @@ use testing_framework_config::topology::configs::{
 };
 
 pub use crate::host::{Host, HostKind, PortOverrides};
-use crate::{host::sort_hosts, network::rewrite_initial_peers};
+use crate::{
+    config::providers::create_providers, host::sort_hosts, network::rewrite_initial_peers,
+};
+mod providers;
 
 #[must_use]
 pub fn create_node_configs(
@@ -197,48 +194,6 @@ pub fn create_node_configs(
     }
 
     configured_hosts
-}
-
-fn create_providers(
-    hosts: &[Host],
-    consensus_configs: &[GeneralConsensusConfig],
-    blend_configs: &[GeneralBlendConfig],
-    da_configs: &[GeneralDaConfig],
-) -> Vec<ProviderInfo> {
-    let mut providers: Vec<_> = da_configs
-        .iter()
-        .enumerate()
-        .map(|(i, da_conf)| ProviderInfo {
-            service_type: ServiceType::DataAvailability,
-            provider_sk: da_conf.signer.clone(),
-            zk_sk: da_conf.secret_zk_key.clone(),
-            locator: Locator(
-                Multiaddr::from_str(&format!(
-                    "/ip4/{}/udp/{}/quic-v1",
-                    hosts[i].ip, hosts[i].da_network_port
-                ))
-                .unwrap(),
-            ),
-            note: consensus_configs[0].da_notes[i].clone(),
-        })
-        .collect();
-    providers.extend(blend_configs.iter().enumerate().map(|(i, blend_conf)| {
-        ProviderInfo {
-            service_type: ServiceType::BlendNetwork,
-            provider_sk: blend_conf.signer.clone(),
-            zk_sk: blend_conf.secret_zk_key.clone(),
-            locator: Locator(
-                Multiaddr::from_str(&format!(
-                    "/ip4/{}/udp/{}/quic-v1",
-                    hosts[i].ip, hosts[i].blend_port
-                ))
-                .unwrap(),
-            ),
-            note: consensus_configs[0].blend_notes[i].clone(),
-        }
-    }));
-
-    providers
 }
 
 fn update_tracing_identifier(
