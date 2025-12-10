@@ -29,6 +29,9 @@ jobs:
             echo "versions.env missing; populate VERSION, NOMOS_NODE_REV, NOMOS_BUNDLE_VERSION" >&2
             exit 1
           fi
+          set -a
+          . versions.env
+          set +a
           cat versions.env >> "$GITHUB_ENV"
           : "${VERSION:?Missing VERSION}"
           : "${NOMOS_NODE_REV:?Missing NOMOS_NODE_REV}"
