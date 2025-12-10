@@ -134,7 +134,10 @@ pub struct PrometheusTemplate {
 impl PrometheusTemplate {
     fn new(port: u16, platform: Option<String>) -> Self {
         Self {
-            host_port: format!("127.0.0.1:{port}:9090"),
+            host_port: format!(
+                "127.0.0.1:{port}:{}",
+                testing_framework_core::constants::DEFAULT_PROMETHEUS_HTTP_PORT
+            ),
             platform,
         }
     }

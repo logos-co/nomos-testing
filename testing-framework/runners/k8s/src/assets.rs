@@ -143,7 +143,10 @@ fn validate_scripts(root: &Path) -> Result<ScriptPaths, AssetsError> {
 }
 
 fn validate_kzg_params(root: &Path) -> Result<PathBuf, AssetsError> {
-    let path = root.join("testing-framework/assets/stack/kzgrs_test_params");
+    let rel = env::var("NOMOS_KZG_DIR_REL")
+        .ok()
+        .unwrap_or_else(|| testing_framework_core::constants::DEFAULT_KZG_HOST_DIR.to_string());
+    let path = root.join(rel);
     if path.exists() {
         Ok(path)
     } else {
