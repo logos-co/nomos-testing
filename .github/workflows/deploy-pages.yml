@@ -29,8 +29,7 @@ jobs:
         
     - name: Build book
       run: |
-        cd book
-        mdbook build
+        mdbook build book
         
     - name: Setup Pages
       uses: actions/configure-pages@v4
@@ -38,7 +37,7 @@ jobs:
     - name: Upload artifact
       uses: actions/upload-pages-artifact@v3
       with:
-        path: 'book/book'
+        path: 'target/book'
 
   deploy:
     environment:
