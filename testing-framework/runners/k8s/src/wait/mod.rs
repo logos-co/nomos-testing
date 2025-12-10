@@ -1,7 +1,15 @@
 use std::time::Duration;
 
 use kube::Error as KubeError;
-use testing_framework_core::scenario::http_probe::NodeRole;
+use testing_framework_core::{
+    constants::{
+        DEFAULT_HTTP_POLL_INTERVAL, DEFAULT_K8S_DEPLOYMENT_TIMEOUT,
+        DEFAULT_NODE_HTTP_PROBE_TIMEOUT, DEFAULT_NODE_HTTP_TIMEOUT, DEFAULT_PROMETHEUS_HTTP_PORT,
+        DEFAULT_PROMETHEUS_HTTP_PROBE_TIMEOUT, DEFAULT_PROMETHEUS_HTTP_TIMEOUT,
+        DEFAULT_PROMETHEUS_SERVICE_NAME,
+    },
+    scenario::http_probe::NodeRole,
+};
 use thiserror::Error;
 
 mod deployment;
@@ -87,11 +95,11 @@ pub enum ClusterWaitError {
     },
 }
 
-pub(crate) const DEPLOYMENT_TIMEOUT: Duration = Duration::from_secs(180);
-pub(crate) const NODE_HTTP_TIMEOUT: Duration = Duration::from_secs(240);
-pub(crate) const NODE_HTTP_PROBE_TIMEOUT: Duration = Duration::from_secs(30);
-pub(crate) const HTTP_POLL_INTERVAL: Duration = Duration::from_secs(1);
-pub(crate) const PROMETHEUS_HTTP_PORT: u16 = 9090;
-pub(crate) const PROMETHEUS_HTTP_TIMEOUT: Duration = Duration::from_secs(240);
-pub(crate) const PROMETHEUS_HTTP_PROBE_TIMEOUT: Duration = Duration::from_secs(30);
-pub(crate) const PROMETHEUS_SERVICE_NAME: &str = "prometheus";
+pub(crate) const DEPLOYMENT_TIMEOUT: Duration = DEFAULT_K8S_DEPLOYMENT_TIMEOUT;
+pub(crate) const NODE_HTTP_TIMEOUT: Duration = DEFAULT_NODE_HTTP_TIMEOUT;
+pub(crate) const NODE_HTTP_PROBE_TIMEOUT: Duration = DEFAULT_NODE_HTTP_PROBE_TIMEOUT;
+pub(crate) const HTTP_POLL_INTERVAL: Duration = DEFAULT_HTTP_POLL_INTERVAL;
+pub(crate) const PROMETHEUS_HTTP_PORT: u16 = DEFAULT_PROMETHEUS_HTTP_PORT;
+pub(crate) const PROMETHEUS_HTTP_TIMEOUT: Duration = DEFAULT_PROMETHEUS_HTTP_TIMEOUT;
+pub(crate) const PROMETHEUS_HTTP_PROBE_TIMEOUT: Duration = DEFAULT_PROMETHEUS_HTTP_PROBE_TIMEOUT;
+pub(crate) const PROMETHEUS_SERVICE_NAME: &str = DEFAULT_PROMETHEUS_SERVICE_NAME;

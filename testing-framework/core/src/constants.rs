@@ -1,4 +1,4 @@
-use std::env;
+use std::{env, time::Duration};
 
 /// Default cfgsync port used across runners.
 pub const DEFAULT_CFGSYNC_PORT: u16 = 4400;
@@ -8,6 +8,30 @@ pub const DEFAULT_KZG_CONTAINER_PATH: &str = "/kzgrs_test_params/kzgrs_test_para
 
 /// Default host-relative directory for KZG assets.
 pub const DEFAULT_KZG_HOST_DIR: &str = "testing-framework/assets/stack/kzgrs_test_params";
+
+/// Default HTTP probe interval used across readiness checks.
+pub const DEFAULT_HTTP_POLL_INTERVAL: Duration = Duration::from_secs(1);
+
+/// Default node HTTP timeout when probing endpoints.
+pub const DEFAULT_NODE_HTTP_TIMEOUT: Duration = Duration::from_secs(240);
+
+/// Default node HTTP timeout when probing NodePort endpoints.
+pub const DEFAULT_NODE_HTTP_PROBE_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Default Kubernetes deployment readiness timeout.
+pub const DEFAULT_K8S_DEPLOYMENT_TIMEOUT: Duration = Duration::from_secs(180);
+
+/// Default Prometheus HTTP port.
+pub const DEFAULT_PROMETHEUS_HTTP_PORT: u16 = 9090;
+
+/// Default Prometheus HTTP timeout.
+pub const DEFAULT_PROMETHEUS_HTTP_TIMEOUT: Duration = Duration::from_secs(240);
+
+/// Default Prometheus HTTP probe timeout for NodePort checks.
+pub const DEFAULT_PROMETHEUS_HTTP_PROBE_TIMEOUT: Duration = Duration::from_secs(30);
+
+/// Default Prometheus service name.
+pub const DEFAULT_PROMETHEUS_SERVICE_NAME: &str = "prometheus";
 
 /// Resolve cfgsync port from `NOMOS_CFGSYNC_PORT`, falling back to the default.
 pub fn cfgsync_port() -> u16 {
