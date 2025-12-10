@@ -8,10 +8,15 @@ use rand::{Rng as _, thread_rng};
 use testing_framework_config::topology::configs::{
     GeneralConfig,
     api::GeneralApiConfig,
+    blend,
     blend::create_blend_configs,
+    bootstrap,
     bootstrap::{SHORT_PROLONGED_BOOTSTRAP_PERIOD, create_bootstrap_configs},
+    consensus,
     consensus::{ConsensusParams, create_consensus_configs, create_genesis_tx_with_declarations},
+    da,
     da::{DaParams, create_da_configs},
+    network,
     network::{NetworkParams, create_network_configs},
     time::default_time_config,
     wallet::WalletConfig,
@@ -52,15 +57,20 @@ pub fn create_node_configs(
     let ports = resolve_da_ports(consensus_params.n_participants, da_ports);
     let blend_ports = resolve_blend_ports(&hosts, blend_ports);
 
-    let (mut consensus_configs, bootstrap_configs, da_configs, network_configs, blend_configs) =
-        build_base_configs(
-            consensus_params,
-            da_params,
-            wallet_config,
-            &ids,
-            &ports,
-            &blend_ports,
-        );
+    let BaseConfigs {
+        mut consensus_configs,
+        bootstrap_configs,
+        da_configs,
+        network_configs,
+        blend_configs,
+    } = build_base_configs(
+        consensus_params,
+        da_params,
+        wallet_config,
+        &ids,
+        &ports,
+        &blend_ports,
+    );
     let api_configs = build_api_configs(&hosts);
     let mut configured_hosts = HashMap::new();
 
@@ -182,26 +192,14 @@ fn build_base_configs(
     ids: &[[u8; 32]],
     da_ports: &[u16],
     blend_ports: &[u16],
-) -> (
-    Vec<testing_framework_config::topology::configs::consensus::GeneralConsensusConfig>,
-    Vec<testing_framework_config::topology::configs::bootstrap::GeneralBootstrapConfig>,
-    Vec<testing_framework_config::topology::configs::da::GeneralDaConfig>,
-    Vec<testing_framework_config::topology::configs::network::GeneralNetworkConfig>,
-    Vec<testing_framework_config::topology::configs::blend::GeneralBlendConfig>,
-) {
-    let consensus_configs = create_consensus_configs(ids, consensus_params, wallet_config);
-    let bootstrap_configs = create_bootstrap_configs(ids, SHORT_PROLONGED_BOOTSTRAP_PERIOD);
-    let da_configs = create_da_configs(ids, da_params, da_ports);
-    let network_configs = create_network_configs(ids, &NetworkParams::default());
-    let blend_configs = create_blend_configs(ids, blend_ports);
-
-    (
-        consensus_configs,
-        bootstrap_configs,
-        da_configs,
-        network_configs,
-        blend_configs,
-    )
+) -> BaseConfigs {
+    BaseConfigs {
+        consensus_configs: create_consensus_configs(ids, consensus_params, wallet_config),
+        bootstrap_configs: create_bootstrap_configs(ids, SHORT_PROLONGED_BOOTSTRAP_PERIOD),
+        da_configs: create_da_configs(ids, da_params, da_ports),
+        network_configs: create_network_configs(ids, &NetworkParams::default()),
+        blend_configs: create_blend_configs(ids, blend_ports),
+    }
 }
 
 fn build_api_configs(hosts: &[Host]) -> Vec<GeneralApiConfig> {
@@ -225,4 +223,12 @@ fn build_peer_ids(ids: &[[u8; 32]]) -> Vec<PeerId> {
             PeerId::from_public_key(&ed25519::Keypair::from(secret).public().into())
         })
         .collect()
+}
+
+struct BaseConfigs {
+    consensus_configs: Vec<consensus::GeneralConsensusConfig>,
+    bootstrap_configs: Vec<bootstrap::GeneralBootstrapConfig>,
+    da_configs: Vec<da::GeneralDaConfig>,
+    network_configs: Vec<network::GeneralNetworkConfig>,
+    blend_configs: Vec<blend::GeneralBlendConfig>,
 }
