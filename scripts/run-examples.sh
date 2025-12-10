@@ -69,8 +69,8 @@ if [ -f "${ROOT_DIR}/paths.env" ]; then
   # shellcheck disable=SC1091
   . "${ROOT_DIR}/paths.env"
 fi
-readonly DEFAULT_VERSION="${VERSION:-v0.3.1}"
-readonly DEFAULT_NODE_REV="${NOMOS_NODE_REV:-d2dd5a5084e1daef4032562c77d41de5e4d495f8}"
+readonly DEFAULT_VERSION="${VERSION:?Missing VERSION in versions.env}"
+readonly DEFAULT_NODE_REV="${NOMOS_NODE_REV:?Missing NOMOS_NODE_REV in versions.env}"
 readonly KZG_DIR_REL="${NOMOS_KZG_DIR_REL:-testing-framework/assets/stack/kzgrs_test_params}"
 readonly KZG_FILE="${NOMOS_KZG_FILE:-kzgrs_test_params}"
 readonly KZG_CONTAINER_PATH="${NOMOS_KZG_CONTAINER_PATH:-/kzgrs_test_params/kzgrs_test_params}"
@@ -80,9 +80,9 @@ readonly HOST_CIRCUITS_DIR="${ROOT_DIR}/${NOMOS_CIRCUITS_HOST_DIR_REL:-.tmp/nomo
 readonly LINUX_CIRCUITS_DIR="${ROOT_DIR}/${NOMOS_CIRCUITS_LINUX_DIR_REL:-.tmp/nomos-circuits-linux}"
 MODE="compose"
 RUN_SECS_RAW=""
-VERSION="${VERSION:-${DEFAULT_VERSION}}"
+VERSION="${DEFAULT_VERSION}"
 IMAGE="${NOMOS_TESTNET_IMAGE:-nomos-testnet:local}"
-NOMOS_NODE_REV="${NOMOS_NODE_REV:-${DEFAULT_NODE_REV}}"
+NOMOS_NODE_REV="${DEFAULT_NODE_REV}"
 DEMO_VALIDATORS=""
 DEMO_EXECUTORS=""
 while [ "$#" -gt 0 ]; do

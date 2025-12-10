@@ -36,8 +36,8 @@ else
   echo "ERROR: versions.env missing; run from repo root or restore the file." >&2
   exit 1
 fi
-DEFAULT_VERSION="${VERSION:-v0.3.1}"
-DEFAULT_NODE_REV="${NOMOS_NODE_REV:-d2dd5a5084e1daef4032562c77d41de5e4d495f8}"
+DEFAULT_VERSION="${VERSION:?Missing VERSION in versions.env}"
+DEFAULT_NODE_REV="${NOMOS_NODE_REV:?Missing NOMOS_NODE_REV in versions.env}"
 PLATFORM="host"
 OUTPUT=""
 
@@ -56,8 +56,8 @@ case "$PLATFORM" in
   *) fail "--platform must be host or linux" ;;
 esac
 
-VERSION="${VERSION:-${DEFAULT_VERSION}}"
-NOMOS_NODE_REV="${NOMOS_NODE_REV:-${DEFAULT_NODE_REV}}"
+VERSION="${DEFAULT_VERSION}"
+NOMOS_NODE_REV="${DEFAULT_NODE_REV}"
 
 # Normalize OUTPUT to an absolute path under the workspace.
 if [ -z "${OUTPUT}" ]; then
