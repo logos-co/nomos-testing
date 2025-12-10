@@ -17,7 +17,7 @@ use testing_framework_config::{
 use tokio::sync::oneshot::channel;
 
 use crate::{
-    config::{Host, PortOverrides},
+    host::{Host, PortOverrides},
     repo::{ConfigRepo, RepoResponse},
 };
 

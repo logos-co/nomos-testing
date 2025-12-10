@@ -288,7 +288,10 @@ impl CleanupGuard for ComposeCleanupGuard {
 mod tests {
     use std::{collections::HashMap, net::Ipv4Addr};
 
-    use cfgsync::config::{Host, PortOverrides, create_node_configs};
+    use cfgsync::{
+        config::builder::create_node_configs,
+        host::{Host, PortOverrides},
+    };
     use groth16::Fr;
     use nomos_core::{
         mantle::{GenesisTx as GenesisTxTrait, ledger::NoteId},

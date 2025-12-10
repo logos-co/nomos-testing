@@ -10,10 +10,7 @@ use testing_framework_config::topology::configs::{
 };
 use tokio::{sync::oneshot::Sender, time::timeout};
 
-use crate::{
-    config::{Host, create_node_configs},
-    server::CfgSyncConfig,
-};
+use crate::{config::builder::create_node_configs, host::Host, server::CfgSyncConfig};
 
 pub enum RepoResponse {
     Config(Box<GeneralConfig>),
