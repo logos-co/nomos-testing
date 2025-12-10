@@ -1,7 +1,11 @@
 use std::time::Duration;
 
 use async_trait::async_trait;
-use testing_framework_core::scenario::{DynError, Expectation, RunContext};
+use nomos_core::header::HeaderId;
+use testing_framework_core::{
+    nodes::ApiClient,
+    scenario::{DynError, Expectation, RunContext},
+};
 use thiserror::Error;
 use tokio::time::sleep;
 
@@ -24,6 +28,7 @@ const LAG_ALLOWANCE: u64 = 2;
 const MIN_PROGRESS_BLOCKS: u64 = 5;
 const REQUEST_RETRIES: usize = 5;
 const REQUEST_RETRY_DELAY: Duration = Duration::from_secs(2);
+const MAX_LAG_ALLOWANCE: u64 = 5;
 
 #[async_trait]
 impl Expectation for ConsensusLiveness {
@@ -34,7 +39,9 @@ impl Expectation for ConsensusLiveness {
     async fn evaluate(&mut self, ctx: &RunContext) -> Result<(), DynError> {
         Self::ensure_participants(ctx)?;
         let target_hint = Self::target_blocks(ctx);
-        let check = Self::collect_results(ctx).await;
+        let mut check = Self::collect_results(ctx).await;
+        let clients: Vec<_> = ctx.node_clients().all_clients().collect();
+        self.anchor_check(target_hint, &mut check, &clients).await;
         (*self).report(target_hint, check)
     }
 }
@@ -51,6 +58,8 @@ enum ConsensusLivenessIssue {
         height: u64,
         target: u64,
     },
+    #[error("{node} could not traverse to anchor tip {anchor_tip:?}")]
+    MissingAnchorPath { node: String, anchor_tip: HeaderId },
     #[error("{node} consensus_info failed: {source}")]
     RequestFailed {
         node: String,
@@ -92,48 +101,41 @@ impl ConsensusLiveness {
     }
 
     async fn collect_results(ctx: &RunContext) -> LivenessCheck {
-        let participant_count = ctx.node_clients().all_clients().count().max(1);
-        let max_attempts = participant_count * REQUEST_RETRIES;
-        let mut samples = Vec::with_capacity(participant_count);
+        let clients: Vec<_> = ctx.node_clients().all_clients().collect();
+        let mut samples = Vec::with_capacity(clients.len());
         let mut issues = Vec::new();
 
-        for attempt in 0..max_attempts {
-            match Self::fetch_cluster_height(ctx).await {
-                Ok(height) => {
-                    samples.push(NodeSample {
-                        label: format!("sample-{attempt}"),
-                        height,
-                    });
-                    if samples.len() >= participant_count {
+        for (idx, client) in clients.iter().enumerate() {
+            for attempt in 0..REQUEST_RETRIES {
+                match Self::fetch_cluster_info(client).await {
+                    Ok((height, tip)) => {
+                        samples.push(NodeSample {
+                            label: format!("node-{idx}"),
+                            height,
+                            tip,
+                        });
                         break;
                     }
+                    Err(err) if attempt + 1 == REQUEST_RETRIES => {
+                        issues.push(ConsensusLivenessIssue::RequestFailed {
+                            node: format!("node-{idx}"),
+                            source: err,
+                        });
+                    }
+                    Err(_) => sleep(REQUEST_RETRY_DELAY).await,
                 }
-                Err(err) => issues.push(ConsensusLivenessIssue::RequestFailed {
-                    node: format!("sample-{attempt}"),
-                    source: err,
-                }),
-            }
-
-            if samples.len() < participant_count {
-                sleep(REQUEST_RETRY_DELAY).await;
             }
         }
 
         LivenessCheck { samples, issues }
     }
 
-    async fn fetch_cluster_height(ctx: &RunContext) -> Result<u64, DynError> {
-        ctx.cluster_client()
-            .try_all_clients(|client| {
-                Box::pin(async move {
-                    client
-                        .consensus_info()
-                        .await
-                        .map(|info| info.height)
-                        .map_err(|err| -> DynError { err.into() })
-                })
-            })
+    async fn fetch_cluster_info(client: &ApiClient) -> Result<(u64, HeaderId), DynError> {
+        client
+            .consensus_info()
             .await
+            .map(|info| (info.height, info.tip))
+            .map_err(|err| -> DynError { err.into() })
     }
 
     #[must_use]
@@ -141,6 +143,83 @@ impl ConsensusLiveness {
     pub const fn with_lag_allowance(mut self, lag_allowance: u64) -> Self {
         self.lag_allowance = lag_allowance;
         self
+    }
+
+    fn effective_lag_allowance(&self, target: u64) -> u64 {
+        (target / 10).clamp(self.lag_allowance, MAX_LAG_ALLOWANCE)
+    }
+
+    async fn anchor_check(
+        &self,
+        target_hint: u64,
+        check: &mut LivenessCheck,
+        clients: &[&ApiClient],
+    ) {
+        if let Some((_, anchor_tip)) = check
+            .samples
+            .iter()
+            .min_by_key(|s| s.height)
+            .map(|s| (s.height, s.tip))
+        {
+            let max_height = check
+                .samples
+                .iter()
+                .map(|sample| sample.height)
+                .max()
+                .unwrap_or(0);
+
+            let mut target = target_hint;
+            if target == 0 || target > max_height {
+                target = max_height;
+            }
+
+            let lag_allowance = self.effective_lag_allowance(target);
+            for (idx, sample) in check.samples.iter().enumerate() {
+                if sample.height + lag_allowance < target {
+                    continue;
+                }
+
+                match clients
+                    .get(idx)
+                    .unwrap()
+                    .consensus_headers(Some(sample.tip), Some(anchor_tip))
+                    .await
+                {
+                    Ok(headers) if !headers.is_empty() && headers.first() == Some(&anchor_tip) => {
+                        tracing::debug!(
+                            node = %sample.label,
+                            count = headers.len(),
+                            "anchor check headers fetched"
+                        );
+                    }
+                    Ok(headers) => {
+                        tracing::debug!(
+                            node = %sample.label,
+                            count = headers.len(),
+                            "anchor check returned empty header list"
+                        );
+                        check
+                            .issues
+                            .push(ConsensusLivenessIssue::MissingAnchorPath {
+                                node: sample.label.clone(),
+                                anchor_tip,
+                            });
+                    }
+                    Err(err) => {
+                        tracing::debug!(
+                            node = %sample.label,
+                            "anchor check failed to fetch headers: {err}"
+                        );
+                        check
+                            .issues
+                            .push(ConsensusLivenessIssue::MissingAnchorPath {
+                                node: sample.label.clone(),
+                                anchor_tip,
+                            });
+                    }
+                }
+            }
+        }
     }
 
     fn report(self, target_hint: u64, mut check: LivenessCheck) -> Result<(), DynError> {
@@ -159,6 +238,7 @@ impl ConsensusLiveness {
         if target == 0 || target > max_height {
             target = max_height;
         }
+        let lag_allowance = self.effective_lag_allowance(target);
 
         if max_height < MIN_PROGRESS_BLOCKS {
             check
@@ -171,7 +251,7 @@ impl ConsensusLiveness {
         }
 
         for sample in &check.samples {
-            if sample.height + self.lag_allowance < target {
+            if sample.height + lag_allowance < target {
                 check
                     .issues
                     .push(ConsensusLivenessIssue::HeightBelowTarget {
@@ -186,6 +266,7 @@ impl ConsensusLiveness {
             tracing::info!(
                 target,
                 heights = ?check.samples.iter().map(|s| s.height).collect::<Vec<_>>(),
+                tips = ?check.samples.iter().map(|s| s.tip).collect::<Vec<_>>(),
                 "consensus liveness expectation satisfied"
             );
             Ok(())
@@ -201,6 +282,7 @@ impl ConsensusLiveness {
 struct NodeSample {
     label: String,
     height: u64,
+    tip: HeaderId,
 }
 
 struct LivenessCheck {

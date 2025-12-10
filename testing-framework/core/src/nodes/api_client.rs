@@ -2,13 +2,14 @@ use std::net::SocketAddr;
 
 use chain_service::CryptarchiaInfo;
 use common_http_client::CommonHttpClient;
+use hex;
 use nomos_core::{block::Block, da::BlobId, mantle::SignedMantleTx, sdp::SessionNumber};
 use nomos_da_network_core::swarm::{BalancerStats, MonitorStats};
 use nomos_da_network_service::MembershipResponse;
 use nomos_http_api_common::paths::{
-    CRYPTARCHIA_INFO, DA_BALANCER_STATS, DA_BLACKLISTED_PEERS, DA_BLOCK_PEER, DA_GET_MEMBERSHIP,
-    DA_HISTORIC_SAMPLING, DA_MONITOR_STATS, DA_UNBLOCK_PEER, MEMPOOL_ADD_TX, NETWORK_INFO,
-    STORAGE_BLOCK,
+    CRYPTARCHIA_HEADERS, CRYPTARCHIA_INFO, DA_BALANCER_STATS, DA_BLACKLISTED_PEERS, DA_BLOCK_PEER,
+    DA_GET_MEMBERSHIP, DA_HISTORIC_SAMPLING, DA_MONITOR_STATS, DA_UNBLOCK_PEER, MEMPOOL_ADD_TX,
+    NETWORK_INFO, STORAGE_BLOCK,
 };
 use nomos_network::backends::libp2p::Libp2pInfo;
 use nomos_node::{HeaderId, api::testing::handlers::HistoricSamplingRequest};
@@ -224,6 +225,35 @@ impl ApiClient {
         id: &HeaderId,
     ) -> reqwest::Result<Option<Block<SignedMantleTx>>> {
         self.post_json_decode(STORAGE_BLOCK, id).await
+    }
+
+    /// Fetch header ids between optional bounds.
+    /// When `from` is None, defaults to tip; when `to` is None, defaults to
+    /// LIB.
+    pub async fn consensus_headers(
+        &self,
+        from: Option<HeaderId>,
+        to: Option<HeaderId>,
+    ) -> reqwest::Result<Vec<HeaderId>> {
+        let mut url = self.join_base(CRYPTARCHIA_HEADERS);
+        {
+            let mut pairs = url.query_pairs_mut();
+            if let Some(from) = from {
+                let bytes: [u8; 32] = from.into();
+                pairs.append_pair("from", &hex::encode(bytes));
+            }
+            if let Some(to) = to {
+                let bytes: [u8; 32] = to.into();
+                pairs.append_pair("to", &hex::encode(bytes));
+            }
+        }
+        self.client
+            .get(url)
+            .send()
+            .await?
+            .error_for_status()?
+            .json()
+            .await
     }
 
     /// Query DA membership via testing API.
