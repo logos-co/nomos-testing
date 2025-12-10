@@ -4,7 +4,7 @@ use testing_framework_core::scenario::CleanupGuard;
 
 use crate::{
     cfgsync::CfgsyncServerHandle,
-    compose::{ComposeCommandError, compose_down},
+    commands::{ComposeCommandError, compose_down},
     workspace::ComposeWorkspace,
 };
 

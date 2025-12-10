@@ -11,10 +11,35 @@ use tokio::{process::Command, time::timeout};
 use url::ParseError;
 
 use crate::{
-    compose::{HostPortMapping, NodeHostPorts},
     environment::StackEnvironment,
     errors::{ComposeRunnerError, StackReadinessError},
 };
+
+/// Host ports mapped for a single node.
+#[derive(Clone, Debug)]
+pub struct NodeHostPorts {
+    pub api: u16,
+    pub testing: u16,
+}
+
+/// All host port mappings for validators and executors.
+#[derive(Clone, Debug)]
+pub struct HostPortMapping {
+    pub validators: Vec<NodeHostPorts>,
+    pub executors: Vec<NodeHostPorts>,
+}
+
+impl HostPortMapping {
+    /// Returns API ports for all validators.
+    pub fn validator_api_ports(&self) -> Vec<u16> {
+        self.validators.iter().map(|ports| ports.api).collect()
+    }
+
+    /// Returns API ports for all executors.
+    pub fn executor_api_ports(&self) -> Vec<u16> {
+        self.executors.iter().map(|ports| ports.api).collect()
+    }
+}
 
 /// Resolve host ports for all nodes from docker compose.
 pub async fn discover_host_ports(

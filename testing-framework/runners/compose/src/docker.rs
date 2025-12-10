@@ -7,10 +7,7 @@ use std::{
 use tokio::{process::Command, time::timeout};
 use tracing::warn;
 
-use crate::{
-    compose::{ComposeCommandError, repository_root},
-    errors::ComposeRunnerError,
-};
+use crate::{commands::ComposeCommandError, errors::ComposeRunnerError, template::repository_root};
 
 const IMAGE_BUILD_TIMEOUT: Duration = Duration::from_secs(600);
 const DOCKER_INFO_TIMEOUT: Duration = Duration::from_secs(15);
@@ -43,7 +40,7 @@ pub async fn ensure_docker_available() -> Result<(), ComposeRunnerError> {
 
 /// Ensure the configured compose image exists, building a local one if needed.
 pub async fn ensure_compose_image() -> Result<(), ComposeRunnerError> {
-    let (image, platform) = crate::compose::resolve_image();
+    let (image, platform) = crate::platform::resolve_image();
     ensure_image_present(&image, platform.as_deref()).await
 }
 

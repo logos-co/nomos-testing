@@ -15,12 +15,13 @@ use uuid::Uuid;
 use crate::{
     cfgsync::{CfgsyncServerHandle, update_cfgsync_config},
     cleanup::RunnerCleanup,
-    compose::{
-        ComposeDescriptor, compose_up, dump_compose_logs, resolve_image, write_compose_file,
-    },
+    commands::{compose_up, dump_compose_logs},
     deployer::DEFAULT_PROMETHEUS_PORT,
+    descriptor::ComposeDescriptor,
     docker::{ensure_compose_image, run_docker_command},
     errors::{ComposeRunnerError, ConfigError, WorkspaceError},
+    platform::resolve_image,
+    template::write_compose_file,
     workspace::ComposeWorkspace,
 };
 

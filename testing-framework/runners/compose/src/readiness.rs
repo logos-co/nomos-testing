@@ -9,8 +9,8 @@ use testing_framework_core::{
 use tokio::time::sleep;
 
 use crate::{
-    compose::{HostPortMapping, NodeHostPorts},
     errors::{NodeClientError, StackReadinessError},
+    ports::{HostPortMapping, NodeHostPorts},
     wait::{wait_for_executors, wait_for_validators},
 };
 

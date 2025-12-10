@@ -17,14 +17,16 @@ use tracing::{debug, info};
 use crate::{
     block_feed::spawn_block_feed_with_retry,
     cleanup::RunnerCleanup,
-    compose::HostPortMapping,
     control::ComposeNodeControl,
     docker::ensure_docker_available,
     environment::{
         PortReservation, StackEnvironment, ensure_supported_topology, prepare_environment,
     },
     errors::ComposeRunnerError,
-    ports::{compose_runner_host, discover_host_ports, ensure_remote_readiness_with_ports},
+    ports::{
+        HostPortMapping, compose_runner_host, discover_host_ports,
+        ensure_remote_readiness_with_ports,
+    },
     readiness::{
         build_node_clients_with_ports, ensure_executors_ready_with_ports,
         ensure_validators_ready_with_ports, maybe_sleep_for_disabled_readiness,

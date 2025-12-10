@@ -9,7 +9,9 @@ use testing_framework_core::{
 };
 use url::ParseError;
 
-use crate::compose::{ComposeCommandError, DescriptorBuildError, TemplateError};
+use crate::{
+    commands::ComposeCommandError, descriptor::DescriptorBuildError, template::TemplateError,
+};
 
 #[derive(Debug, thiserror::Error)]
 /// Top-level compose runner errors.
