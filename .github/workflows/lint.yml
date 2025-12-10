@@ -10,8 +10,6 @@ env:
 permissions:
   actions: read
   contents: read
-  pages: write
-  id-token: write
 
 concurrency:
   group: lint-${{ github.ref }}
@@ -490,74 +488,3 @@ jobs:
             docker rm -f $ids
           fi
 
-  book:
-    runs-on: ubuntu-latest
-    env:
-      RUSTUP_TOOLCHAIN: nightly-2025-09-14
-    steps:
-      - uses: actions/checkout@v4
-      - name: Load versions
-        run: |
-          set -euo pipefail
-          if [ ! -f versions.env ]; then
-            echo "versions.env missing; populate VERSION, NOMOS_NODE_REV, NOMOS_BUNDLE_VERSION" >&2
-            exit 1
-          fi
-          cat versions.env >> "$GITHUB_ENV"
-          : "${VERSION:?Missing VERSION}"
-          : "${NOMOS_NODE_REV:?Missing NOMOS_NODE_REV}"
-          : "${NOMOS_BUNDLE_VERSION:?Missing NOMOS_BUNDLE_VERSION}"
-      - uses: dtolnay/rust-toolchain@master
-        with:
-          toolchain: nightly-2025-09-14
-      - uses: actions/cache@v4
-        with:
-          path: |
-            ~/.cargo/registry
-            ~/.cargo/git
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
-          restore-keys: ${{ runner.os }}-cargo-
-      - name: Install mdBook toolchain
-        run: |
-          MDBOOK_VERSION=0.4.40
-          LINKCHECK_VERSION=0.7.7
-          MERMAID_VERSION=0.14.0
-          cargo +nightly-2025-09-14 install --locked mdbook --version ${MDBOOK_VERSION}
-          cargo +nightly-2025-09-14 install mdbook-linkcheck --version ${LINKCHECK_VERSION}
-          cargo +nightly-2025-09-14 install --locked mdbook-mermaid --version ${MERMAID_VERSION}
-          cargo +nightly-2025-09-14 install --locked typos-cli --version 1.23.6
-      - name: Spell check (typos)
-        run: typos --format brief book/src
-      - name: Markdown lint
-        run: npx -y markdownlint-cli2 "book/src/**/*.md"
-      - name: Build book
-        run: mdbook build book
-      - name: Add .nojekyll
-        run: |
-          mkdir -p book/book
-          touch book/book/.nojekyll
-      - name: Check links
-        run: mdbook-linkcheck -s book
-      - name: Setup Pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        uses: actions/configure-pages@v4
-      - name: Upload book artifact for Pages
-        if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: book/book
-
-  deploy_book:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master'
-    needs: book
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    permissions:
-      pages: write
-      id-token: write
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4

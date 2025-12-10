@@ -15,7 +15,7 @@ if [ -f "${ROOT_DIR}/paths.env" ]; then
   . "${ROOT_DIR}/paths.env"
 fi
 DOCKERFILE_PATH="${ROOT_DIR}/testing-framework/assets/stack/Dockerfile"
-IMAGE_TAG="${IMAGE_TAG:-nomos-testnet:local}"
+IMAGE_TAG="${IMAGE_TAG:-logos-blockchain-testing:local}"
 VERSION="${VERSION:-v0.3.1}"
 KZG_DIR_REL="${NOMOS_KZG_DIR_REL:-testing-framework/assets/stack/kzgrs_test_params}"
 CIRCUITS_OVERRIDE="${CIRCUITS_OVERRIDE:-${KZG_DIR_REL}}"

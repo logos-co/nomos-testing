@@ -1,36 +1,18 @@
-use std::{
-    collections::HashSet,
-    path::PathBuf,
-    process::{Child, Command, Stdio},
-    time::Duration,
-};
+use std::{ops::Deref, path::PathBuf};
 
-use broadcast_service::BlockInfo;
-use chain_service::CryptarchiaInfo;
-use futures::Stream;
-use kzgrs_backend::common::share::{DaLightShare, DaShare, DaSharesCommitments};
-use nomos_core::{
-    block::Block, da::BlobId, header::HeaderId, mantle::SignedMantleTx, sdp::SessionNumber,
-};
-use nomos_da_network_core::swarm::{BalancerStats, MonitorStats};
-use nomos_da_network_service::MembershipResponse;
 use nomos_executor::config::Config;
-use nomos_http_api_common::paths::{DA_GET_SHARES_COMMITMENTS, MANTLE_METRICS, MEMPOOL_ADD_TX};
-use nomos_network::backends::libp2p::Libp2pInfo;
-use nomos_node::api::testing::handlers::HistoricSamplingRequest;
 use nomos_tracing_service::LoggerLayer;
-use reqwest::Url;
 pub use testing_framework_config::nodes::executor::create_executor_config;
 
-use super::{ApiClient, create_tempdir, persist_tempdir, should_persist_tempdir};
+use super::{persist_tempdir, should_persist_tempdir};
 use crate::{
-    IS_DEBUG_TRACING, adjust_timeout,
+    IS_DEBUG_TRACING,
     nodes::{
         LOGS_PREFIX,
         common::{
             binary::{BinaryConfig, BinaryResolver},
-            config::{injection::inject_ibd_into_cryptarchia, paths::ensure_recovery_paths},
-            lifecycle::{kill::kill_child, spawn::configure_logging},
+            lifecycle::kill::kill_child,
+            node::{NodeConfigCommon, NodeHandle, spawn_node},
         },
     },
 };
@@ -48,201 +30,64 @@ fn binary_path() -> PathBuf {
 }
 
 pub struct Executor {
-    tempdir: tempfile::TempDir,
-    child: Child,
-    config: Config,
-    api: ApiClient,
+    handle: NodeHandle<Config>,
+}
+
+impl Deref for Executor {
+    type Target = NodeHandle<Config>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.handle
+    }
 }
 
 impl Drop for Executor {
     fn drop(&mut self) {
         if should_persist_tempdir()
-            && let Err(e) = persist_tempdir(&mut self.tempdir, "nomos-executor")
+            && let Err(e) = persist_tempdir(&mut self.handle.tempdir, "nomos-executor")
         {
             println!("failed to persist tempdir: {e}");
         }
 
-        kill_child(&mut self.child);
+        kill_child(&mut self.handle.child);
     }
 }
 
 impl Executor {
-    pub async fn spawn(mut config: Config) -> Self {
-        let dir = create_tempdir().unwrap();
-        let config_path = dir.path().join("executor.yaml");
-        let file = std::fs::File::create(&config_path).unwrap();
+    pub async fn spawn(config: Config) -> Self {
+        let handle = spawn_node(
+            config,
+            LOGS_PREFIX,
+            "executor.yaml",
+            binary_path(),
+            !*IS_DEBUG_TRACING,
+        )
+        .await
+        .expect("executor did not become ready");
 
-        // Ensure recovery files/dirs exist so services that persist state do not fail
-        // on startup.
-        let _ = ensure_recovery_paths(dir.path());
+        Self { handle }
+    }
+}
 
-        if !*IS_DEBUG_TRACING {
-            configure_logging(dir.path(), LOGS_PREFIX, |cfg| {
-                config.tracing.logger = LoggerLayer::File(cfg);
-            });
-        }
+impl NodeConfigCommon for Config {
+    fn set_logger(&mut self, logger: LoggerLayer) {
+        self.tracing.logger = logger;
+    }
 
-        config.storage.db_path = dir.path().join("db");
-        dir.path().clone_into(
-            &mut config
+    fn set_paths(&mut self, base: &std::path::Path) {
+        self.storage.db_path = base.join("db");
+        base.clone_into(
+            &mut self
                 .da_verifier
                 .storage_adapter_settings
                 .blob_storage_directory,
         );
-
-        let addr = config.http.backend_settings.address;
-        let testing_addr = config.testing_http.backend_settings.address;
-
-        let mut yaml_value = serde_yaml::to_value(&config).unwrap();
-        inject_ibd_into_cryptarchia(&mut yaml_value);
-        serde_yaml::to_writer(file, &yaml_value).unwrap();
-        let child = Command::new(binary_path())
-            .arg(&config_path)
-            .current_dir(dir.path())
-            .stdout(Stdio::inherit())
-            .spawn()
-            .unwrap();
-        let node = Self {
-            child,
-            tempdir: dir,
-            config,
-            api: ApiClient::new(addr, Some(testing_addr)),
-        };
-        tokio::time::timeout(adjust_timeout(Duration::from_secs(60)), async {
-            node.wait_online().await;
-        })
-        .await
-        .unwrap();
-
-        node
     }
 
-    pub async fn block_peer(&self, peer_id: String) -> bool {
-        self.api.block_peer(&peer_id).await.unwrap()
-    }
-
-    pub async fn unblock_peer(&self, peer_id: String) -> bool {
-        self.api.unblock_peer(&peer_id).await.unwrap()
-    }
-
-    pub async fn blacklisted_peers(&self) -> Vec<String> {
-        self.api.blacklisted_peers().await.unwrap()
-    }
-
-    async fn wait_online(&self) {
-        loop {
-            let res = self.api.get_response(MANTLE_METRICS).await;
-            if res.is_ok() && res.unwrap().status().is_success() {
-                break;
-            }
-            tokio::time::sleep(Duration::from_millis(100)).await;
-        }
-    }
-
-    #[must_use]
-    pub const fn config(&self) -> &Config {
-        &self.config
-    }
-
-    #[must_use]
-    pub fn url(&self) -> Url {
-        self.api.base_url().clone()
-    }
-
-    #[must_use]
-    pub fn testing_url(&self) -> Option<Url> {
-        self.api.testing_url()
-    }
-
-    pub async fn balancer_stats(&self) -> BalancerStats {
-        self.api.balancer_stats().await.unwrap()
-    }
-
-    pub async fn monitor_stats(&self) -> MonitorStats {
-        self.api.monitor_stats().await.unwrap()
-    }
-
-    pub async fn network_info(&self) -> Libp2pInfo {
-        self.api.network_info().await.unwrap()
-    }
-
-    pub async fn consensus_info(&self) -> CryptarchiaInfo {
-        self.api.consensus_info().await.unwrap()
-    }
-
-    pub async fn get_block(&self, id: HeaderId) -> Option<Block<SignedMantleTx>> {
-        self.api.storage_block(&id).await.unwrap()
-    }
-
-    pub async fn get_shares(
-        &self,
-        blob_id: BlobId,
-        requested_shares: HashSet<[u8; 2]>,
-        filter_shares: HashSet<[u8; 2]>,
-        return_available: bool,
-    ) -> Result<impl Stream<Item = DaLightShare>, common_http_client::Error> {
-        self.api
-            .http_client()
-            .get_shares::<DaShare>(
-                self.api.base_url().clone(),
-                blob_id,
-                requested_shares,
-                filter_shares,
-                return_available,
-            )
-            .await
-    }
-
-    pub async fn get_commitments(&self, blob_id: BlobId) -> Option<DaSharesCommitments> {
-        self.api
-            .post_json_decode(DA_GET_SHARES_COMMITMENTS, &blob_id)
-            .await
-            .unwrap()
-    }
-
-    pub async fn get_storage_commitments(
-        &self,
-        blob_id: BlobId,
-    ) -> Result<Option<DaSharesCommitments>, common_http_client::Error> {
-        self.api
-            .http_client()
-            .get_storage_commitments::<DaShare>(self.api.base_url().clone(), blob_id)
-            .await
-    }
-
-    pub async fn da_get_membership(
-        &self,
-        session_id: SessionNumber,
-    ) -> Result<MembershipResponse, reqwest::Error> {
-        self.api.da_get_membership(&session_id).await
-    }
-
-    pub async fn da_historic_sampling<I>(
-        &self,
-        block_id: HeaderId,
-        blob_ids: I,
-    ) -> Result<bool, reqwest::Error>
-    where
-        I: IntoIterator<Item = (BlobId, SessionNumber)>,
-    {
-        let request = HistoricSamplingRequest {
-            block_id,
-            blob_ids: blob_ids.into_iter().collect(),
-        };
-
-        self.api.da_historic_sampling(&request).await
-    }
-
-    pub async fn get_lib_stream(
-        &self,
-    ) -> Result<impl Stream<Item = BlockInfo>, common_http_client::Error> {
-        self.api
-            .http_client()
-            .get_lib_stream(self.api.base_url().clone())
-            .await
-    }
-
-    pub async fn add_tx(&self, tx: SignedMantleTx) -> Result<(), reqwest::Error> {
-        self.api.post_json_unit(MEMPOOL_ADD_TX, &tx).await
+    fn addresses(&self) -> (std::net::SocketAddr, Option<std::net::SocketAddr>) {
+        (
+            self.http.backend_settings.address,
+            Some(self.testing_http.backend_settings.address),
+        )
     }
 }

@@ -12,7 +12,7 @@ set -euo pipefail
 #
 # Env overrides:
 #   VERSION                       - circuits version (default v0.3.1)
-#   NOMOS_TESTNET_IMAGE           - image tag (default nomos-testnet:local)
+#   NOMOS_TESTNET_IMAGE           - image tag (default logos-blockchain-testing:local)
 #   NOMOS_CIRCUITS_PLATFORM       - override host platform detection
 #   NOMOS_CIRCUITS_REBUILD_RAPIDSNARK - set to 1 to force rapidsnark rebuild
 #   NOMOS_NODE_REV                - nomos-node git rev for local binaries (default d2dd5a5084e1daef4032562c77d41de5e4d495f8)
@@ -33,7 +33,7 @@ Options:
 
 Environment:
   VERSION                        Circuits version (default v0.3.1)
-  NOMOS_TESTNET_IMAGE            Image tag (default nomos-testnet:local)
+  NOMOS_TESTNET_IMAGE            Image tag (default logos-blockchain-testing:local)
   NOMOS_CIRCUITS_PLATFORM        Override host platform detection
   NOMOS_CIRCUITS_REBUILD_RAPIDSNARK  Force rapidsnark rebuild
   NOMOS_NODE_REV                 nomos-node git rev (default d2dd5a5084e1daef4032562c77d41de5e4d495f8)
@@ -81,7 +81,7 @@ readonly LINUX_CIRCUITS_DIR="${ROOT_DIR}/${NOMOS_CIRCUITS_LINUX_DIR_REL:-.tmp/no
 MODE="compose"
 RUN_SECS_RAW=""
 VERSION="${DEFAULT_VERSION}"
-IMAGE="${NOMOS_TESTNET_IMAGE:-nomos-testnet:local}"
+IMAGE="${NOMOS_TESTNET_IMAGE:-logos-blockchain-testing:local}"
 NOMOS_NODE_REV="${DEFAULT_NODE_REV}"
 DEMO_VALIDATORS=""
 DEMO_EXECUTORS=""
@@ -358,21 +358,12 @@ if [ "$MODE" = "compose" ] && [ -z "${COMPOSE_CIRCUITS_PLATFORM:-}" ]; then
 fi
 
 export NOMOS_DEMO_RUN_SECS="${RUN_SECS}"
-export COMPOSE_DEMO_RUN_SECS="${RUN_SECS}"
-export LOCAL_DEMO_RUN_SECS="${RUN_SECS}"
-export K8S_DEMO_RUN_SECS="${RUN_SECS}"
 
 if [ -n "${DEMO_VALIDATORS}" ]; then
   export NOMOS_DEMO_VALIDATORS="${DEMO_VALIDATORS}"
-  export COMPOSE_DEMO_VALIDATORS="${DEMO_VALIDATORS}"
-  export LOCAL_DEMO_VALIDATORS="${DEMO_VALIDATORS}"
-  export K8S_DEMO_VALIDATORS="${DEMO_VALIDATORS}"
 fi
 if [ -n "${DEMO_EXECUTORS}" ]; then
   export NOMOS_DEMO_EXECUTORS="${DEMO_EXECUTORS}"
-  export COMPOSE_DEMO_EXECUTORS="${DEMO_EXECUTORS}"
-  export LOCAL_DEMO_EXECUTORS="${DEMO_EXECUTORS}"
-  export K8S_DEMO_EXECUTORS="${DEMO_EXECUTORS}"
 fi
 POL_PROOF_DEV_MODE=true \
 NOMOS_TESTNET_IMAGE="${IMAGE}" \

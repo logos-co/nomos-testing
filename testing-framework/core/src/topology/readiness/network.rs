@@ -21,13 +21,13 @@ impl<'a> ReadinessCheck<'a> for NetworkReadiness<'a> {
                 self.topology
                     .validators
                     .iter()
-                    .map(crate::nodes::validator::Validator::network_info)
+                    .map(|node| async { node.api().network_info().await.unwrap() })
             ),
             futures::future::join_all(
                 self.topology
                     .executors
                     .iter()
-                    .map(crate::nodes::executor::Executor::network_info)
+                    .map(|node| async { node.api().network_info().await.unwrap() })
             )
         );
 

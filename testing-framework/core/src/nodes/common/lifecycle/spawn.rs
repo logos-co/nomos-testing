@@ -1,8 +1,10 @@
 #![allow(dead_code)]
 
-use std::path::Path;
+use std::{fs::File, io, path::Path};
 
 use nomos_tracing::logging::local::FileConfig;
+use serde::Serialize;
+use serde_yaml::Value;
 
 /// Configure tracing logger to write into `NOMOS_LOG_DIR` if set, else into the
 /// provided base dir.
@@ -23,4 +25,19 @@ where
             prefix: Some(prefix.into()),
         });
     }
+}
+
+/// Write a YAML config file, allowing a caller-provided injection hook to
+/// mutate the serialized value before it is written.
+pub fn write_config_with_injection<T, F>(config: &T, path: &Path, inject: F) -> io::Result<()>
+where
+    T: Serialize,
+    F: FnOnce(&mut Value),
+{
+    let mut yaml_value =
+        serde_yaml::to_value(config).map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
+    inject(&mut yaml_value);
+    let file = File::create(path)?;
+    serde_yaml::to_writer(file, &yaml_value)
+        .map_err(|err| io::Error::new(io::ErrorKind::Other, err))
 }

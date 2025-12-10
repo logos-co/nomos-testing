@@ -76,7 +76,7 @@ docker logs --tail 100 <container-id>
 **Keep containers for post-mortem debugging:**
 ```bash
 COMPOSE_RUNNER_PRESERVE=1 \
-NOMOS_TESTNET_IMAGE=nomos-testnet:local \
+NOMOS_TESTNET_IMAGE=logos-blockchain-testing:local \
 POL_PROOF_DEV_MODE=true \
 cargo run -p runner-examples --bin compose_runner
 
@@ -277,7 +277,7 @@ Run a minimal baseline test (e.g., 2 validators, consensus liveness only). If it
 - **Fix**: Kill orphaned processes (`pkill nomos-node`), wait for Docker cleanup
   (`docker compose down`), or restart Docker.
 
-### "Image not found: nomos-testnet:local"
+### "Image not found: logos-blockchain-testing:local"
 
 - **Cause**: Docker image not built for Compose/K8s runners, or KZG assets not
   baked into the image.

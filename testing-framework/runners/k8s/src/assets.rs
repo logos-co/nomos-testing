@@ -86,8 +86,8 @@ pub fn prepare_assets(topology: &GeneratedTopology) -> Result<RunnerAssets, Asse
     let chart_path = helm_chart_path()?;
     let values_yaml = render_values_yaml(topology)?;
     let values_file = write_temp_file(tempdir.path(), "values.yaml", values_yaml)?;
-    let image =
-        env::var("NOMOS_TESTNET_IMAGE").unwrap_or_else(|_| String::from("nomos-testnet:local"));
+    let image = env::var("NOMOS_TESTNET_IMAGE")
+        .unwrap_or_else(|_| String::from("logos-blockchain-testing:local"));
 
     Ok(RunnerAssets {
         image,
@@ -215,8 +215,14 @@ fn stack_scripts_root(root: &Path) -> PathBuf {
 
 #[derive(Serialize)]
 struct HelmValues {
+    cfgsync: CfgsyncValues,
     validators: NodeGroup,
     executors: NodeGroup,
+}
+
+#[derive(Serialize)]
+struct CfgsyncValues {
+    port: u16,
 }
 
 #[derive(Serialize)]
@@ -235,6 +241,9 @@ struct NodeValues {
 }
 
 fn build_values(topology: &GeneratedTopology) -> HelmValues {
+    let cfgsync = CfgsyncValues {
+        port: cfgsync_port(),
+    };
     let pol_mode = pol_proof_mode();
     let validators = topology
         .validators()
@@ -311,6 +320,7 @@ fn build_values(topology: &GeneratedTopology) -> HelmValues {
         .collect();
 
     HelmValues {
+        cfgsync,
         validators: NodeGroup {
             count: topology.validators().len(),
             nodes: validators,

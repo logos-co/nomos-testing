@@ -18,7 +18,7 @@ impl<'a> ReadinessCheck<'a> for DaBalancerReadiness<'a> {
             data.push((
                 self.labels[idx].clone(),
                 validator.config().da_network.subnet_threshold,
-                validator.balancer_stats().await,
+                validator.api().balancer_stats().await.unwrap(),
             ));
         }
         for (offset, executor) in self.topology.executors.iter().enumerate() {
@@ -26,7 +26,7 @@ impl<'a> ReadinessCheck<'a> for DaBalancerReadiness<'a> {
             data.push((
                 self.labels[label_index].clone(),
                 executor.config().da_network.subnet_threshold,
-                executor.balancer_stats().await,
+                executor.api().balancer_stats().await.unwrap(),
             ));
         }
         data

@@ -53,7 +53,7 @@ pub async fn ensure_image_present(
         return Ok(());
     }
 
-    if image != "nomos-testnet:local" {
+    if image != "logos-blockchain-testing:local" {
         return Err(ComposeRunnerError::MissingImage {
             image: image.to_owned(),
         });

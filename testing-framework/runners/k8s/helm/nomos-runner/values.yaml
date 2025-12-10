@@ -1,4 +1,4 @@
-image: "nomos-testnet:local"
+image: "logos-blockchain-testing:local"
 imagePullPolicy: IfNotPresent
 
 cfgsync:

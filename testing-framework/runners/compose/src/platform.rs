@@ -3,8 +3,8 @@ use std::env;
 /// Select the compose image and optional platform, honoring
 /// NOMOS_TESTNET_IMAGE.
 pub fn resolve_image() -> (String, Option<String>) {
-    let image =
-        env::var("NOMOS_TESTNET_IMAGE").unwrap_or_else(|_| String::from("nomos-testnet:local"));
+    let image = env::var("NOMOS_TESTNET_IMAGE")
+        .unwrap_or_else(|_| String::from("logos-blockchain-testing:local"));
     let platform = (image == "ghcr.io/logos-co/nomos:testnet").then(|| "linux/amd64".to_owned());
     (image, platform)
 }

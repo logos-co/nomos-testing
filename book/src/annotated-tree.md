@@ -3,7 +3,7 @@
 Directory structure with key paths annotated:
 
 ```
-nomos-testing/
+logos-blockchain-testing/
 ├─ testing-framework/           # Core library crates
 │  ├─ configs/                  # Node config builders, topology generation, tracing/logging config
 │  ├─ core/                     # Scenario model (ScenarioBuilder), runtime (Runner, Deployer), topology, node spawning

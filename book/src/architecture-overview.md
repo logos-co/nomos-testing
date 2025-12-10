@@ -103,7 +103,7 @@ Three deployer implementations:
 Built via `testing-framework/assets/stack/scripts/build_test_image.sh`:
 - Embeds KZG circuit parameters and binaries from `testing-framework/assets/stack/kzgrs_test_params/kzgrs_test_params`
 - Includes runner scripts: `run_nomos_node.sh`, `run_nomos_executor.sh`
-- Tagged as `NOMOS_TESTNET_IMAGE` (default: `nomos-testnet:local`)
+- Tagged as `NOMOS_TESTNET_IMAGE` (default: `logos-blockchain-testing:local`)
 - **Recommended:** Use prebuilt bundle via `scripts/build-bundle.sh --platform linux` and set `NOMOS_BINARIES_TAR` before building image
 
 ### Circuit Assets

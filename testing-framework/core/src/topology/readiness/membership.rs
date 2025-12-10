@@ -22,13 +22,13 @@ impl<'a> ReadinessCheck<'a> for MembershipReadiness<'a> {
                 self.topology
                     .validators
                     .iter()
-                    .map(|node| node.da_get_membership(self.session)),
+                    .map(|node| node.api().da_get_membership(&self.session)),
             ),
             futures::future::join_all(
                 self.topology
                     .executors
                     .iter()
-                    .map(|node| node.da_get_membership(self.session)),
+                    .map(|node| node.api().da_get_membership(&self.session)),
             )
         );
 

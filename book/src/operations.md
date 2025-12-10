@@ -107,7 +107,7 @@ export NOMOS_BINARIES_TAR=.tmp/nomos-binaries-linux-v0.3.1.tar.gz
 testing-framework/assets/stack/scripts/build_test_image.sh
 
 # Run
-NOMOS_TESTNET_IMAGE=nomos-testnet:local \
+NOMOS_TESTNET_IMAGE=logos-blockchain-testing:local \
 POL_PROOF_DEV_MODE=true \
 cargo run -p runner-examples --bin compose_runner
 ```
@@ -123,13 +123,13 @@ cp -r /tmp/nomos-circuits/* testing-framework/assets/stack/kzgrs_test_params/
 testing-framework/assets/stack/scripts/build_test_image.sh
 
 # Run
-NOMOS_TESTNET_IMAGE=nomos-testnet:local \
+NOMOS_TESTNET_IMAGE=logos-blockchain-testing:local \
 POL_PROOF_DEV_MODE=true \
 cargo run -p runner-examples --bin compose_runner
 ```
 
 **Environment variables:**
-- `NOMOS_TESTNET_IMAGE=nomos-testnet:local` — Image tag (required, must match built image)
+- `NOMOS_TESTNET_IMAGE=logos-blockchain-testing:local` — Image tag (required, must match built image)
 - `POL_PROOF_DEV_MODE=true` — **Required** for all runners
 - `NOMOS_DEMO_VALIDATORS=3` / `NOMOS_DEMO_EXECUTORS=2` / `NOMOS_DEMO_RUN_SECS=120` — Topology overrides
 - `COMPOSE_NODE_PAIRS=1x1` — Alternative topology format: "validators×executors"
@@ -163,15 +163,15 @@ export NOMOS_BINARIES_TAR=.tmp/nomos-binaries-linux-v0.3.1.tar.gz
 testing-framework/assets/stack/scripts/build_test_image.sh
 
 # Load into cluster
-export NOMOS_TESTNET_IMAGE=nomos-testnet:local
-kind load docker-image nomos-testnet:local  # For kind
-# OR: minikube image load nomos-testnet:local  # For minikube
-# OR: docker push your-registry/nomos-testnet:local  # For remote
+export NOMOS_TESTNET_IMAGE=logos-blockchain-testing:local
+kind load docker-image logos-blockchain-testing:local  # For kind
+# OR: minikube image load logos-blockchain-testing:local  # For minikube
+# OR: docker push your-registry/logos-blockchain-testing:local  # For remote
 ```
 
 **Run the example:**
 ```bash
-export NOMOS_TESTNET_IMAGE=nomos-testnet:local
+export NOMOS_TESTNET_IMAGE=logos-blockchain-testing:local
 export POL_PROOF_DEV_MODE=true
 cargo run -p runner-examples --bin k8s_runner
 ```
@@ -369,7 +369,7 @@ Setting `NOMOS_LOG_DIR` writes files **inside the container**. To access them, y
 1. **Copy files out after the run:**
 ```bash
 NOMOS_LOG_DIR=/logs \
-NOMOS_TESTNET_IMAGE=nomos-testnet:local \
+NOMOS_TESTNET_IMAGE=logos-blockchain-testing:local \
 POL_PROOF_DEV_MODE=true \
 cargo run -p runner-examples --bin compose_runner
 
@@ -389,7 +389,7 @@ volumes:
 **Keep containers for debugging:**
 ```bash
 COMPOSE_RUNNER_PRESERVE=1 \
-NOMOS_TESTNET_IMAGE=nomos-testnet:local \
+NOMOS_TESTNET_IMAGE=logos-blockchain-testing:local \
 cargo run -p runner-examples --bin compose_runner
 # Containers remain running after test—inspect with docker logs or docker exec
 ```

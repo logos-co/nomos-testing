@@ -12,7 +12,7 @@ pub(crate) const LOGS_PREFIX: &str = "__logs";
 static KEEP_NODE_TEMPDIRS: LazyLock<bool> =
     LazyLock::new(|| std::env::var("NOMOS_TESTS_KEEP_LOGS").is_ok());
 
-fn create_tempdir() -> std::io::Result<TempDir> {
+pub(crate) fn create_tempdir() -> std::io::Result<TempDir> {
     // It's easier to use the current location instead of OS-default tempfile
     // location because Github Actions can easily access files in the current
     // location using wildcard to upload them as artifacts.

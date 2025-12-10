@@ -21,7 +21,7 @@ The framework ships with runnable example binaries in `examples/src/bin/`.
 **Recommended:** Use the convenience script:
 
 ```bash
-# From the nomos-testing directory
+# From the logos-blockchain-testing directory
 scripts/run-examples.sh -t 60 -v 1 -e 1 host
 ```
 
@@ -192,7 +192,7 @@ cp -r /tmp/nomos-circuits/* testing-framework/assets/stack/kzgrs_test_params/
 testing-framework/assets/stack/scripts/build_test_image.sh
 
 # Run with Compose
-NOMOS_TESTNET_IMAGE=nomos-testnet:local \
+NOMOS_TESTNET_IMAGE=logos-blockchain-testing:local \
 POL_PROOF_DEV_MODE=true \
 cargo run -p runner-examples --bin compose_runner
 ```
