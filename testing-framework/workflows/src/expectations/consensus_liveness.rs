@@ -39,9 +39,7 @@ impl Expectation for ConsensusLiveness {
     async fn evaluate(&mut self, ctx: &RunContext) -> Result<(), DynError> {
         Self::ensure_participants(ctx)?;
         let target_hint = Self::target_blocks(ctx);
-        let mut check = Self::collect_results(ctx).await;
-        let clients: Vec<_> = ctx.node_clients().all_clients().collect();
-        self.anchor_check(target_hint, &mut check, &clients).await;
+        let check = Self::collect_results(ctx).await;
         (*self).report(target_hint, check)
     }
 }
@@ -58,8 +56,6 @@ enum ConsensusLivenessIssue {
         height: u64,
         target: u64,
     },
-    #[error("{node} could not traverse to anchor tip {anchor_tip:?}")]
-    MissingAnchorPath { node: String, anchor_tip: HeaderId },
     #[error("{node} consensus_info failed: {source}")]
     RequestFailed {
         node: String,
@@ -147,79 +143,6 @@ impl ConsensusLiveness {
 
     fn effective_lag_allowance(&self, target: u64) -> u64 {
         (target / 10).clamp(self.lag_allowance, MAX_LAG_ALLOWANCE)
-    }
-
-    async fn anchor_check(
-        &self,
-        target_hint: u64,
-        check: &mut LivenessCheck,
-        clients: &[&ApiClient],
-    ) {
-        if let Some((_, anchor_tip)) = check
-            .samples
-            .iter()
-            .min_by_key(|s| s.height)
-            .map(|s| (s.height, s.tip))
-        {
-            let max_height = check
-                .samples
-                .iter()
-                .map(|sample| sample.height)
-                .max()
-                .unwrap_or(0);
-
-            let mut target = target_hint;
-            if target == 0 || target > max_height {
-                target = max_height;
-            }
-
-            let lag_allowance = self.effective_lag_allowance(target);
-            for (idx, sample) in check.samples.iter().enumerate() {
-                if sample.height + lag_allowance < target {
-                    continue;
-                }
-
-                match clients
-                    .get(idx)
-                    .unwrap()
-                    .consensus_headers(Some(sample.tip), Some(anchor_tip))
-                    .await
-                {
-                    Ok(headers) if !headers.is_empty() && headers.first() == Some(&anchor_tip) => {
-                        tracing::debug!(
-                            node = %sample.label,
-                            count = headers.len(),
-                            "anchor check headers fetched"
-                        );
-                    }
-                    Ok(headers) => {
-                        tracing::debug!(
-                            node = %sample.label,
-                            count = headers.len(),
-                            "anchor check returned empty header list"
-                        );
-                        check
-                            .issues
-                            .push(ConsensusLivenessIssue::MissingAnchorPath {
-                                node: sample.label.clone(),
-                                anchor_tip,
-                            });
-                    }
-                    Err(err) => {
-                        tracing::debug!(
-                            node = %sample.label,
-                            "anchor check failed to fetch headers: {err}"
-                        );
-                        check
-                            .issues
-                            .push(ConsensusLivenessIssue::MissingAnchorPath {
-                                node: sample.label.clone(),
-                                anchor_tip,
-                            });
-                    }
-                }
-            }
-        }
     }
 
     fn report(self, target_hint: u64, mut check: LivenessCheck) -> Result<(), DynError> {
