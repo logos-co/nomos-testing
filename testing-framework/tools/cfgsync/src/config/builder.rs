@@ -46,36 +46,20 @@ pub fn create_node_configs(
     )
     .expect("invalid cfgsync inputs");
 
-    let ids = ids.unwrap_or_else(|| {
-        let mut generated = vec![[0; 32]; consensus_params.n_participants];
-        for id in &mut generated {
-            thread_rng().fill(id);
-        }
-        generated
-    });
+    let ids = generate_ids(consensus_params.n_participants, ids);
+    let ports = resolve_da_ports(consensus_params.n_participants, da_ports);
+    let blend_ports = resolve_blend_ports(&hosts, blend_ports);
 
-    let ports = da_ports.unwrap_or_else(|| {
-        (0..consensus_params.n_participants)
-            .map(|_| get_available_udp_port().unwrap())
-            .collect()
-    });
-
-    let blend_ports = blend_ports.unwrap_or_else(|| hosts.iter().map(|h| h.blend_port).collect());
-
-    let mut consensus_configs = create_consensus_configs(&ids, consensus_params, wallet_config);
-    let bootstrap_configs = create_bootstrap_configs(&ids, SHORT_PROLONGED_BOOTSTRAP_PERIOD);
-    let da_configs = create_da_configs(&ids, da_params, &ports);
-    let network_configs = create_network_configs(&ids, &NetworkParams::default());
-    let blend_configs = create_blend_configs(&ids, &blend_ports);
-    let api_configs = hosts
-        .iter()
-        .map(|host| GeneralApiConfig {
-            address: format!("0.0.0.0:{}", host.api_port).parse().unwrap(),
-            testing_http_address: format!("0.0.0.0:{}", host.testing_http_port)
-                .parse()
-                .unwrap(),
-        })
-        .collect::<Vec<_>>();
+    let (mut consensus_configs, bootstrap_configs, da_configs, network_configs, blend_configs) =
+        build_base_configs(
+            consensus_params,
+            da_params,
+            wallet_config,
+            &ids,
+            &ports,
+            &blend_ports,
+        );
+    let api_configs = build_api_configs(&hosts);
     let mut configured_hosts = HashMap::new();
 
     let initial_peer_templates: Vec<Vec<Multiaddr>> = network_configs
@@ -86,15 +70,7 @@ pub fn create_node_configs(
         .iter()
         .map(|cfg| cfg.backend.inner.port)
         .collect();
-    let peer_ids: Vec<PeerId> = ids
-        .iter()
-        .map(|bytes| {
-            let mut key_bytes = *bytes;
-            let secret =
-                ed25519::SecretKey::try_from_bytes(&mut key_bytes).expect("valid ed25519 key");
-            PeerId::from_public_key(&ed25519::Keypair::from(secret).public().into())
-        })
-        .collect();
+    let peer_ids = build_peer_ids(&ids);
 
     let host_network_init_peers = rewrite_initial_peers(
         &initial_peer_templates,
@@ -176,6 +152,80 @@ pub fn create_node_configs(
     }
 
     configured_hosts
+}
+
+fn generate_ids(count: usize, ids: Option<Vec<[u8; 32]>>) -> Vec<[u8; 32]> {
+    ids.unwrap_or_else(|| {
+        let mut generated = vec![[0; 32]; count];
+        for id in &mut generated {
+            thread_rng().fill(id);
+        }
+        generated
+    })
+}
+
+fn resolve_da_ports(count: usize, da_ports: Option<Vec<u16>>) -> Vec<u16> {
+    da_ports.unwrap_or_else(|| {
+        (0..count)
+            .map(|_| get_available_udp_port().unwrap())
+            .collect()
+    })
+}
+
+fn resolve_blend_ports(hosts: &[Host], blend_ports: Option<Vec<u16>>) -> Vec<u16> {
+    blend_ports.unwrap_or_else(|| hosts.iter().map(|h| h.blend_port).collect())
+}
+
+fn build_base_configs(
+    consensus_params: &ConsensusParams,
+    da_params: &DaParams,
+    wallet_config: &WalletConfig,
+    ids: &[[u8; 32]],
+    da_ports: &[u16],
+    blend_ports: &[u16],
+) -> (
+    Vec<testing_framework_config::topology::configs::consensus::GeneralConsensusConfig>,
+    Vec<testing_framework_config::topology::configs::bootstrap::GeneralBootstrapConfig>,
+    Vec<testing_framework_config::topology::configs::da::GeneralDaConfig>,
+    Vec<testing_framework_config::topology::configs::network::GeneralNetworkConfig>,
+    Vec<testing_framework_config::topology::configs::blend::GeneralBlendConfig>,
+) {
+    let consensus_configs = create_consensus_configs(ids, consensus_params, wallet_config);
+    let bootstrap_configs = create_bootstrap_configs(ids, SHORT_PROLONGED_BOOTSTRAP_PERIOD);
+    let da_configs = create_da_configs(ids, da_params, da_ports);
+    let network_configs = create_network_configs(ids, &NetworkParams::default());
+    let blend_configs = create_blend_configs(ids, blend_ports);
+
+    (
+        consensus_configs,
+        bootstrap_configs,
+        da_configs,
+        network_configs,
+        blend_configs,
+    )
+}
+
+fn build_api_configs(hosts: &[Host]) -> Vec<GeneralApiConfig> {
+    hosts
+        .iter()
+        .map(|host| GeneralApiConfig {
+            address: format!("0.0.0.0:{}", host.api_port).parse().unwrap(),
+            testing_http_address: format!("0.0.0.0:{}", host.testing_http_port)
+                .parse()
+                .unwrap(),
+        })
+        .collect::<Vec<_>>()
+}
+
+fn build_peer_ids(ids: &[[u8; 32]]) -> Vec<PeerId> {
+    ids.iter()
+        .map(|bytes| {
+            let mut key_bytes = *bytes;
+            let secret =
+                ed25519::SecretKey::try_from_bytes(&mut key_bytes).expect("valid ed25519 key");
+            PeerId::from_public_key(&ed25519::Keypair::from(secret).public().into())
+        })
+        .collect()
 }
 
 fn update_tracing_identifier(
