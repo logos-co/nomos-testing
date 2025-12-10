@@ -488,7 +488,9 @@ jobs:
       - name: Build book
         run: mdbook build book
       - name: Add .nojekyll
-        run: touch book/book/.nojekyll
+        run: |
+          mkdir -p book/book
+          touch book/book/.nojekyll
       - name: Check links
         run: mdbook-linkcheck -s book
       - name: Setup Pages
