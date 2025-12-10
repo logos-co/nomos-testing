@@ -23,6 +23,22 @@ pub enum ComposeCommandError {
     Timeout { command: String, timeout: Duration },
 }
 
+/// Run an arbitrary docker command with a timeout.
+pub async fn run_docker_command(
+    mut command: Command,
+    timeout_duration: Duration,
+    description: &str,
+) -> Result<(), ComposeCommandError> {
+    let result = timeout(timeout_duration, command.status()).await;
+    match result {
+        Ok(status) => handle_compose_status(status, description),
+        Err(_) => Err(ComposeCommandError::Timeout {
+            command: description.to_owned(),
+            timeout: timeout_duration,
+        }),
+    }
+}
+
 /// Runs `docker compose up -d` for the generated stack.
 pub async fn compose_up(
     compose_path: &Path,

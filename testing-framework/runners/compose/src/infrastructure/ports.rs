@@ -11,8 +11,8 @@ use tokio::{process::Command, time::timeout};
 use url::ParseError;
 
 use crate::{
-    environment::StackEnvironment,
     errors::{ComposeRunnerError, StackReadinessError},
+    infrastructure::environment::StackEnvironment,
 };
 
 /// Host ports mapped for a single node.

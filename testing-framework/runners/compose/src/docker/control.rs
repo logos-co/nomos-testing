@@ -3,7 +3,7 @@ use std::path::{Path, PathBuf};
 use testing_framework_core::scenario::{DynError, NodeControlHandle};
 use tokio::process::Command;
 
-use crate::{docker::run_docker_command, errors::ComposeRunnerError};
+use crate::{docker::commands::run_docker_command, errors::ComposeRunnerError};
 
 pub async fn restart_compose_service(
     compose_file: &Path,
@@ -23,10 +23,11 @@ pub async fn restart_compose_service(
     let description = "docker compose restart";
     run_docker_command(
         command,
-        description,
         testing_framework_core::adjust_timeout(std::time::Duration::from_secs(120)),
+        description,
     )
     .await
+    .map_err(ComposeRunnerError::Compose)
 }
 
 /// Compose-specific node control handle for restarting nodes.

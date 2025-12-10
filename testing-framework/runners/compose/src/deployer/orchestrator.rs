@@ -14,8 +14,10 @@ use super::{
     setup::{DeploymentContext, DeploymentSetup},
 };
 use crate::{
-    control::ComposeNodeControl, errors::ComposeRunnerError, ports::compose_runner_host,
-    readiness::metrics_handle_from_port,
+    docker::control::ComposeNodeControl,
+    errors::ComposeRunnerError,
+    infrastructure::{environment::StackEnvironment, ports::compose_runner_host},
+    lifecycle::readiness::metrics_handle_from_port,
 };
 
 pub struct DeploymentOrchestrator {
@@ -48,7 +50,7 @@ impl DeploymentOrchestrator {
             ReadinessChecker::wait_all(&descriptors, &host_ports, &mut environment).await?;
         } else {
             info!("readiness checks disabled; giving the stack a short grace period");
-            crate::readiness::maybe_sleep_for_disabled_readiness(false).await;
+            crate::lifecycle::readiness::maybe_sleep_for_disabled_readiness(false).await;
         }
 
         let host = compose_runner_host();
@@ -79,7 +81,7 @@ impl DeploymentOrchestrator {
 
     fn maybe_node_control<Caps>(
         &self,
-        environment: &crate::environment::StackEnvironment,
+        environment: &StackEnvironment,
     ) -> Option<Arc<dyn NodeControlHandle>>
     where
         Caps: RequiresNodeControl + Send + Sync,

@@ -10,7 +10,8 @@ use testing_framework_core::{
 use url::ParseError;
 
 use crate::{
-    commands::ComposeCommandError, descriptor::DescriptorBuildError, template::TemplateError,
+    descriptor::DescriptorBuildError, docker::commands::ComposeCommandError,
+    infrastructure::template::TemplateError,
 };
 
 #[derive(Debug, thiserror::Error)]

@@ -5,8 +5,11 @@ use testing_framework_core::{
 use tracing::info;
 
 use crate::{
-    block_feed::spawn_block_feed_with_retry, environment::StackEnvironment,
-    errors::ComposeRunnerError, ports::HostPortMapping, readiness::build_node_clients_with_ports,
+    errors::ComposeRunnerError,
+    infrastructure::{environment::StackEnvironment, ports::HostPortMapping},
+    lifecycle::{
+        block_feed::spawn_block_feed_with_retry, readiness::build_node_clients_with_ports,
+    },
 };
 
 pub struct ClientBuilder;

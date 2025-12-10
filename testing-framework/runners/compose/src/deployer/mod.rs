@@ -9,7 +9,7 @@ use testing_framework_core::scenario::{
     BlockFeedTask, CleanupGuard, Deployer, RequiresNodeControl, Runner, Scenario,
 };
 
-use crate::{cleanup::RunnerCleanup, errors::ComposeRunnerError};
+use crate::{errors::ComposeRunnerError, lifecycle::cleanup::RunnerCleanup};
 
 /// Docker Compose-based deployer for Nomos test scenarios.
 #[derive(Clone, Copy)]

@@ -4,7 +4,7 @@ use testing_framework_core::{
     topology::generation::{GeneratedNodeConfig, GeneratedTopology},
 };
 
-use crate::platform::{host_gateway_entry, resolve_image};
+use crate::docker::platform::{host_gateway_entry, resolve_image};
 
 mod node;
 

@@ -13,16 +13,20 @@ use tracing::{debug, info, warn};
 use uuid::Uuid;
 
 use crate::{
-    cfgsync::{CfgsyncServerHandle, update_cfgsync_config},
-    cleanup::RunnerCleanup,
-    commands::{compose_up, dump_compose_logs},
     deployer::setup::DEFAULT_PROMETHEUS_PORT,
     descriptor::ComposeDescriptor,
-    docker::{ensure_compose_image, run_docker_command},
+    docker::{
+        commands::{compose_up, dump_compose_logs, run_docker_command},
+        ensure_compose_image,
+        platform::resolve_image,
+        workspace::ComposeWorkspace,
+    },
     errors::{ComposeRunnerError, ConfigError, WorkspaceError},
-    platform::resolve_image,
-    template::write_compose_file,
-    workspace::ComposeWorkspace,
+    infrastructure::{
+        cfgsync::{CfgsyncServerHandle, update_cfgsync_config},
+        template::write_compose_file,
+    },
+    lifecycle::cleanup::RunnerCleanup,
 };
 
 const CFGSYNC_START_TIMEOUT: Duration = Duration::from_secs(180);
@@ -274,8 +278,8 @@ pub async fn launch_cfgsync(
 
     run_docker_command(
         command,
-        "docker run cfgsync server",
         adjust_timeout(CFGSYNC_START_TIMEOUT),
+        "docker run cfgsync server",
     )
     .await
     .map_err(|source| ConfigError::CfgsyncStart {

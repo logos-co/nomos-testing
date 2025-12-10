@@ -10,8 +10,8 @@ use tokio::time::sleep;
 
 use crate::{
     errors::{NodeClientError, StackReadinessError},
-    ports::{HostPortMapping, NodeHostPorts},
-    wait::{wait_for_executors, wait_for_validators},
+    infrastructure::ports::{HostPortMapping, NodeHostPorts},
+    lifecycle::wait::{wait_for_executors, wait_for_validators},
 };
 
 const DISABLED_READINESS_SLEEP: Duration = Duration::from_secs(5);

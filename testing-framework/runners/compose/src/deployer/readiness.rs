@@ -2,10 +2,12 @@ use testing_framework_core::topology::generation::GeneratedTopology;
 use tracing::info;
 
 use crate::{
-    environment::StackEnvironment,
     errors::ComposeRunnerError,
-    ports::{HostPortMapping, ensure_remote_readiness_with_ports},
-    readiness::{ensure_executors_ready_with_ports, ensure_validators_ready_with_ports},
+    infrastructure::{
+        environment::StackEnvironment,
+        ports::{HostPortMapping, ensure_remote_readiness_with_ports},
+    },
+    lifecycle::readiness::{ensure_executors_ready_with_ports, ensure_validators_ready_with_ports},
 };
 
 pub struct ReadinessChecker;

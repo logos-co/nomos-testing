@@ -3,9 +3,11 @@ use std::{env, path::PathBuf, thread};
 use testing_framework_core::scenario::CleanupGuard;
 
 use crate::{
-    cfgsync::CfgsyncServerHandle,
-    commands::{ComposeCommandError, compose_down},
-    workspace::ComposeWorkspace,
+    docker::{
+        commands::{ComposeCommandError, compose_down},
+        workspace::ComposeWorkspace,
+    },
+    infrastructure::cfgsync::CfgsyncServerHandle,
 };
 
 /// Cleans up a compose deployment and associated cfgsync container.

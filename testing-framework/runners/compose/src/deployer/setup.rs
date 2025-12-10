@@ -8,10 +8,10 @@ use tracing::info;
 
 use crate::{
     docker::ensure_docker_available,
-    environment::{
+    errors::ComposeRunnerError,
+    infrastructure::environment::{
         PortReservation, StackEnvironment, ensure_supported_topology, prepare_environment,
     },
-    errors::ComposeRunnerError,
 };
 
 pub const PROMETHEUS_PORT_ENV: &str = "TEST_FRAMEWORK_PROMETHEUS_PORT";

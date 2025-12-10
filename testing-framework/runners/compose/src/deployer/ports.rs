@@ -2,9 +2,11 @@ use testing_framework_core::topology::generation::GeneratedTopology;
 use tracing::{debug, info};
 
 use crate::{
-    environment::StackEnvironment,
     errors::ComposeRunnerError,
-    ports::{HostPortMapping, discover_host_ports},
+    infrastructure::{
+        environment::StackEnvironment,
+        ports::{HostPortMapping, discover_host_ports},
+    },
 };
 
 pub struct PortManager;

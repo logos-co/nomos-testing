@@ -1,13 +1,16 @@
-use std::{
-    env,
-    process::{Command as StdCommand, Stdio},
-    time::Duration,
-};
+pub mod commands;
+pub mod control;
+pub mod platform;
+pub mod workspace;
+
+use std::{env, process::Stdio, time::Duration};
 
 use tokio::{process::Command, time::timeout};
-use tracing::warn;
 
-use crate::{commands::ComposeCommandError, errors::ComposeRunnerError, template::repository_root};
+use crate::{
+    docker::commands::ComposeCommandError, errors::ComposeRunnerError,
+    infrastructure::template::repository_root,
+};
 
 const IMAGE_BUILD_TIMEOUT: Duration = Duration::from_secs(600);
 const DOCKER_INFO_TIMEOUT: Duration = Duration::from_secs(15);
@@ -40,7 +43,7 @@ pub async fn ensure_docker_available() -> Result<(), ComposeRunnerError> {
 
 /// Ensure the configured compose image exists, building a local one if needed.
 pub async fn ensure_compose_image() -> Result<(), ComposeRunnerError> {
-    let (image, platform) = crate::platform::resolve_image();
+    let (image, platform) = crate::docker::platform::resolve_image();
     ensure_image_present(&image, platform.as_deref()).await
 }
 
@@ -123,73 +126,60 @@ pub async fn build_local_image(
             .arg(format!("CIRCUITS_OVERRIDE={value}"));
     }
 
+    let node_rev = std::env::var("NOMOS_NODE_REV")
+        .unwrap_or_else(|_| String::from("d2dd5a5084e1daef4032562c77d41de5e4d495f8"));
+    cmd.arg("--build-arg")
+        .arg(format!("NOMOS_NODE_REV={node_rev}"));
+
+    if let Some(value) = env::var("NOMOS_CIRCUITS_VERSION")
+        .ok()
+        .filter(|val| !val.is_empty())
+    {
+        cmd.arg("--build-arg")
+            .arg(format!("NOMOS_CIRCUITS_VERSION={value}"));
+    }
+
+    if env::var("NOMOS_CIRCUITS_REBUILD_RAPIDSNARK").is_ok() {
+        cmd.arg("--build-arg").arg("RAPIDSNARK_REBUILD=1");
+    }
+
     cmd.arg("-t")
         .arg(image)
         .arg("-f")
-        .arg(&dockerfile)
+        .arg(dockerfile)
         .arg(&repo_root);
 
-    run_docker_command(cmd, "docker build compose image", IMAGE_BUILD_TIMEOUT).await
-}
+    cmd.current_dir(&repo_root);
 
-/// Run a docker command with a timeout, mapping errors into runner errors.
-pub async fn run_docker_command(
-    mut command: Command,
-    description: &str,
-    timeout_duration: Duration,
-) -> Result<(), ComposeRunnerError> {
-    match timeout(timeout_duration, command.status()).await {
-        Ok(Ok(status)) if status.success() => Ok(()),
-        Ok(Ok(status)) => Err(ComposeRunnerError::Compose(ComposeCommandError::Failed {
-            command: description.to_owned(),
-            status,
-        })),
-        Ok(Err(source)) => Err(ComposeRunnerError::Compose(ComposeCommandError::Spawn {
-            command: description.to_owned(),
-            source,
-        })),
-        Err(_) => Err(ComposeRunnerError::Compose(ComposeCommandError::Timeout {
-            command: description.to_owned(),
-            timeout: timeout_duration,
-        })),
-    }
-}
-
-fn detect_docker_platform() -> Result<Option<String>, ComposeRunnerError> {
-    let output = StdCommand::new("docker")
-        .arg("info")
-        .arg("-f")
-        .arg("{{.Architecture}}")
-        .output()
-        .map_err(|source| ComposeRunnerError::ImageBuild {
-            source: source.into(),
-        })?;
-
-    if !output.status.success() {
-        return Ok(None);
-    }
-
-    let arch = String::from_utf8_lossy(&output.stdout).trim().to_owned();
-    if arch.is_empty() {
-        return Ok(None);
-    }
-
-    Ok(Some(format!("linux/{arch}")))
-}
-
-/// Choose the build platform from user override or docker host architecture.
-pub fn select_build_platform(
-    requested: Option<&str>,
-) -> Result<Option<String>, ComposeRunnerError> {
-    if let Some(value) = requested {
-        return Ok(Some(value.to_owned()));
-    }
-
-    detect_docker_platform()?.map_or_else(
-        || {
-            warn!("docker host architecture unavailable; letting docker choose default platform");
-            Ok(None)
-        },
-        |host_platform| Ok(Some(host_platform)),
+    let status = timeout(
+        testing_framework_core::adjust_timeout(IMAGE_BUILD_TIMEOUT),
+        cmd.status(),
     )
+    .await
+    .map_err(|_| {
+        ComposeRunnerError::Compose(ComposeCommandError::Timeout {
+            command: String::from("docker build"),
+            timeout: testing_framework_core::adjust_timeout(IMAGE_BUILD_TIMEOUT),
+        })
+    })?;
+
+    match status {
+        Ok(code) if code.success() => Ok(()),
+        Ok(code) => Err(ComposeRunnerError::Compose(ComposeCommandError::Failed {
+            command: String::from("docker build"),
+            status: code,
+        })),
+        Err(err) => Err(ComposeRunnerError::ImageBuild { source: err.into() }),
+    }
+}
+
+fn select_build_platform(platform: Option<&str>) -> Result<Option<String>, ComposeRunnerError> {
+    Ok(platform.map(String::from).or_else(|| {
+        let host_arch = std::env::consts::ARCH;
+        match host_arch {
+            "aarch64" | "arm64" => Some(String::from("linux/arm64")),
+            "x86_64" => Some(String::from("linux/amd64")),
+            _ => None,
+        }
+    }))
 }

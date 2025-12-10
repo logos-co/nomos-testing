@@ -1,24 +1,18 @@
-pub mod block_feed;
-pub mod cfgsync;
-pub mod cleanup;
-pub mod commands;
-pub mod control;
 pub mod deployer;
 pub mod descriptor;
 pub mod docker;
-pub mod environment;
 pub mod errors;
-pub mod platform;
-pub mod ports;
-pub mod readiness;
-pub mod template;
-pub mod wait;
-pub mod workspace;
+pub mod infrastructure;
+pub mod lifecycle;
 
-pub use commands::{ComposeCommandError, compose_down, compose_up, dump_compose_logs};
 pub use deployer::ComposeDeployer;
 pub use descriptor::{ComposeDescriptor, ComposeDescriptorBuilder, EnvEntry, NodeDescriptor};
+pub use docker::{
+    commands::{ComposeCommandError, compose_down, compose_up, dump_compose_logs},
+    platform::{host_gateway_entry, resolve_image},
+};
 pub use errors::ComposeRunnerError;
-pub use platform::{host_gateway_entry, resolve_image};
-pub use ports::{HostPortMapping, NodeHostPorts};
-pub use template::{TemplateError, repository_root, write_compose_file};
+pub use infrastructure::{
+    ports::{HostPortMapping, NodeHostPorts},
+    template::{TemplateError, repository_root, write_compose_file},
+};
