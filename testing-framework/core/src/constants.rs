@@ -33,6 +33,21 @@ pub const DEFAULT_PROMETHEUS_HTTP_PROBE_TIMEOUT: Duration = Duration::from_secs(
 /// Default Prometheus service name.
 pub const DEFAULT_PROMETHEUS_SERVICE_NAME: &str = "prometheus";
 
+/// Default API port used by nodes.
+pub const DEFAULT_API_PORT: u16 = 18080;
+
+/// Default testing HTTP port used by nodes.
+pub const DEFAULT_TESTING_HTTP_PORT: u16 = 18081;
+
+/// Default libp2p network port.
+pub const DEFAULT_LIBP2P_NETWORK_PORT: u16 = 3000;
+
+/// Default DA network port.
+pub const DEFAULT_DA_NETWORK_PORT: u16 = 3300;
+
+/// Default blend network port.
+pub const DEFAULT_BLEND_NETWORK_PORT: u16 = 4401;
+
 /// Resolve cfgsync port from `NOMOS_CFGSYNC_PORT`, falling back to the default.
 pub fn cfgsync_port() -> u16 {
     env::var("NOMOS_CFGSYNC_PORT")
