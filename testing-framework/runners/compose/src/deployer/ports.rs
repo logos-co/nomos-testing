@@ -1,0 +1,36 @@
+use testing_framework_core::topology::generation::GeneratedTopology;
+use tracing::{debug, info};
+
+use crate::{
+    environment::StackEnvironment,
+    errors::ComposeRunnerError,
+    ports::{HostPortMapping, discover_host_ports},
+};
+
+pub struct PortManager;
+
+impl PortManager {
+    pub async fn prepare(
+        environment: &mut StackEnvironment,
+        descriptors: &GeneratedTopology,
+    ) -> Result<HostPortMapping, ComposeRunnerError> {
+        debug!("resolving host ports for compose services");
+        match discover_host_ports(environment, descriptors).await {
+            Ok(mapping) => {
+                info!(
+                    validator_ports = ?mapping.validator_api_ports(),
+                    executor_ports = ?mapping.executor_api_ports(),
+                    prometheus_port = environment.prometheus_port(),
+                    "resolved container host ports"
+                );
+                Ok(mapping)
+            }
+            Err(err) => {
+                environment
+                    .fail("failed to determine container host ports")
+                    .await;
+                Err(err)
+            }
+        }
+    }
+}

@@ -16,7 +16,7 @@ use crate::{
     cfgsync::{CfgsyncServerHandle, update_cfgsync_config},
     cleanup::RunnerCleanup,
     commands::{compose_up, dump_compose_logs},
-    deployer::DEFAULT_PROMETHEUS_PORT,
+    deployer::setup::DEFAULT_PROMETHEUS_PORT,
     descriptor::ComposeDescriptor,
     docker::{ensure_compose_image, run_docker_command},
     errors::{ComposeRunnerError, ConfigError, WorkspaceError},
