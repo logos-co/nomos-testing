@@ -97,6 +97,8 @@ impl Deployer for K8sDeployer {
         info!(
             validators = descriptors.validators().len(),
             executors = descriptors.executors().len(),
+            duration_secs = scenario.duration().as_secs(),
+            readiness_checks = self.readiness_checks,
             "starting k8s deployment"
         );
 
