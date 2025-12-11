@@ -29,6 +29,7 @@ pub fn create_inscription_transaction_with_id(id: ChannelId) -> SignedMantleTx {
 
     let tx_hash = mantle_tx.hash();
     let signature = signing_key.sign(&tx_hash.as_signing_bytes());
+    tracing::debug!(channel = ?id, tx_hash = ?tx_hash, "building inscription transaction");
 
     SignedMantleTx::new(
         mantle_tx,

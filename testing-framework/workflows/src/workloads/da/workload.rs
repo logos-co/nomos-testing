@@ -143,6 +143,7 @@ where
         match receiver.recv().await {
             Ok(record) => {
                 if let Some(msg_id) = find_channel_op(record.block.as_ref(), &mut matcher) {
+                    tracing::debug!(?msg_id, "DA: matched channel operation");
                     return Ok(msg_id);
                 }
             }
@@ -166,6 +167,7 @@ async fn publish_blob(
 
     let signer = SigningKey::from_bytes(&TEST_KEY_BYTES).verifying_key();
     let data = random_blob_payload();
+    tracing::debug!(channel = ?channel_id, payload_bytes = data.len(), "DA: prepared blob payload");
     let client = ExecutorHttpClient::new(None);
 
     let mut candidates: Vec<&ApiClient> = executors.iter().collect();

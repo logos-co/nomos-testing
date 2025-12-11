@@ -198,6 +198,11 @@ impl<'a> Submission<'a> {
 
 async fn submit_wallet_transaction(ctx: &RunContext, input: &WalletInput) -> Result<(), DynError> {
     let signed_tx = Arc::new(build_wallet_transaction(input)?);
+    tracing::debug!(
+        tx_hash = ?signed_tx.hash(),
+        user = ?input.account.public_key(),
+        "submitting wallet transaction"
+    );
     submit_transaction_via_cluster(ctx, signed_tx).await
 }
 

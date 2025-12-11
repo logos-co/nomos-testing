@@ -185,11 +185,13 @@ fn capture_block(
     if !new_inscriptions.is_empty() {
         let mut guard = inscriptions.lock().expect("inscription lock poisoned");
         guard.extend(new_inscriptions);
+        tracing::debug!(count = guard.len(), "DA expectation captured inscriptions");
     }
 
     if !new_blobs.is_empty() {
         let mut guard = blobs.lock().expect("blob lock poisoned");
         guard.extend(new_blobs);
+        tracing::debug!(count = guard.len(), "DA expectation captured blobs");
     }
 }
 
