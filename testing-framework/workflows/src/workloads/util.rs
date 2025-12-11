@@ -3,11 +3,12 @@ use std::sync::Arc;
 use nomos_core::{
     block::Block,
     mantle::{
-        AuthenticatedMantleTx as _, SignedMantleTx,
+        AuthenticatedMantleTx as _, SignedMantleTx, Transaction as MantleTx,
         ops::{Op, channel::MsgId},
     },
 };
 use testing_framework_core::scenario::{DynError, RunContext};
+use tracing::debug;
 
 /// Scans a block and invokes the matcher for every operation until it returns
 /// `Some(...)`. Returns `None` when no matching operation is found.
@@ -32,14 +33,22 @@ pub async fn submit_transaction_via_cluster(
     ctx: &RunContext,
     tx: Arc<SignedMantleTx>,
 ) -> Result<(), DynError> {
+    let tx_hash = tx.hash();
+    debug!(?tx_hash, "submitting transaction via cluster");
     ctx.cluster_client()
         .try_all_clients(|client| {
             let tx = Arc::clone(&tx);
             Box::pin(async move {
-                client
+                let url = client.base_url().clone();
+                debug!(?tx_hash, %url, "submitting transaction to client");
+                let res = client
                     .submit_transaction(&tx)
                     .await
-                    .map_err(|err| -> DynError { err.into() })
+                    .map_err(|err| -> DynError { err.into() });
+                if res.is_err() {
+                    debug!(?tx_hash, %url, "transaction submission failed");
+                }
+                res
             })
         })
         .await

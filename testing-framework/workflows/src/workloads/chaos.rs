@@ -7,6 +7,7 @@ use tokio::time::{Instant, sleep};
 use tracing::info;
 
 /// Randomly restarts validators and executors during a run to introduce chaos.
+#[derive(Debug)]
 pub struct RandomRestartWorkload {
     min_delay: Duration,
     max_delay: Duration,
@@ -137,6 +138,14 @@ impl Workload for RandomRestartWorkload {
             return Err("chaos restart workload has no eligible targets".into());
         }
 
+        tracing::info!(
+            config = ?self,
+            validators = ctx.descriptors().validators().len(),
+            executors = ctx.descriptors().executors().len(),
+            target_count = targets.len(),
+            "starting chaos restart workload"
+        );
+
         let mut cooldowns = self.initialize_cooldowns(&targets);
 
         loop {
@@ -144,14 +153,20 @@ impl Workload for RandomRestartWorkload {
             let target = self.pick_target(&targets, &cooldowns).await;
 
             match target {
-                Target::Validator(index) => handle
-                    .restart_validator(index)
-                    .await
-                    .map_err(|err| format!("validator restart failed: {err}"))?,
-                Target::Executor(index) => handle
-                    .restart_executor(index)
-                    .await
-                    .map_err(|err| format!("executor restart failed: {err}"))?,
+                Target::Validator(index) => {
+                    tracing::info!(index, "chaos restarting validator");
+                    handle
+                        .restart_validator(index)
+                        .await
+                        .map_err(|err| format!("validator restart failed: {err}"))?
+                }
+                Target::Executor(index) => {
+                    tracing::info!(index, "chaos restarting executor");
+                    handle
+                        .restart_executor(index)
+                        .await
+                        .map_err(|err| format!("executor restart failed: {err}"))?
+                }
             }
 
             cooldowns.insert(target, Instant::now() + self.target_cooldown);
