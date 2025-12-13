@@ -37,3 +37,13 @@ prometheus:
       evaluation_interval: 15s
       external_labels:
         monitor: "NomosRunner"
+
+grafana:
+  enabled: true
+  image: "grafana/grafana:10.4.1"
+  imagePullPolicy: IfNotPresent
+  adminUser: admin
+  adminPassword: admin
+  service:
+    type: NodePort
+    nodePort: 30030

@@ -9,8 +9,8 @@ const DEFAULT_RUN_SECS: u64 = 60;
 const DEFAULT_VALIDATORS: usize = 1;
 const DEFAULT_EXECUTORS: usize = 1;
 const MIXED_TXS_PER_BLOCK: u64 = 5;
-const TOTAL_WALLETS: usize = 64;
-const TRANSACTION_WALLETS: usize = 8;
+const TOTAL_WALLETS: usize = 1000;
+const TRANSACTION_WALLETS: usize = 500;
 
 #[tokio::main]
 async fn main() {
@@ -59,8 +59,7 @@ async fn run_k8s_case(
                 .users(TRANSACTION_WALLETS)
         })
         .da_with(|da| {
-            da.channel_rate(1)
-                .blob_rate(1)
+            da.blob_rate(1)
         })
         .with_run_duration(run_duration)
         .expect_consensus_liveness()

@@ -8,11 +8,11 @@ use std::{
 };
 
 use async_trait::async_trait;
+use key_management_system_service::keys::ZkPublicKey;
 use nomos_core::{header::HeaderId, mantle::AuthenticatedMantleTx as _};
 use testing_framework_core::scenario::{DynError, Expectation, RunContext};
 use thiserror::Error;
 use tokio::sync::broadcast;
-use zksign::PublicKey;
 
 use super::workload::{limited_user_count, submission_plan};
 
@@ -93,12 +93,12 @@ impl Expectation for TxInclusionExpectation {
             .into_iter()
             .take(planned)
             .map(|account| account.secret_key.to_public_key())
-            .collect::<HashSet<PublicKey>>();
+            .collect::<HashSet<ZkPublicKey>>();
 
         let observed = Arc::new(AtomicU64::new(0));
         let receiver = ctx.block_feed().subscribe();
-        let tracked_accounts = Arc::new(wallet_pks);
-        let spawn_accounts = Arc::clone(&tracked_accounts);
+        let tracked_accounts: Arc<HashSet<ZkPublicKey>> = Arc::new(wallet_pks);
+        let spawn_accounts: Arc<HashSet<ZkPublicKey>> = Arc::clone(&tracked_accounts);
         let spawn_observed = Arc::clone(&observed);
 
         tokio::spawn(async move {

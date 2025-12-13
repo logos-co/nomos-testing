@@ -1,7 +1,7 @@
 use std::{num::NonZeroU64, path::PathBuf, time::Duration};
 
 use blend_serde::Config as BlendUserConfig;
-use key_management_system_service::keys::{Key, ZkKey};
+use key_management_system_service::keys::Key;
 use nomos_blend_service::{
     core::settings::{CoverTrafficSettings, MessageDelayerSettings, SchedulerSettings, ZkSettings},
     settings::TimingSettings,
@@ -27,18 +27,16 @@ pub(crate) fn build_blend_service_config(
     BlendDeploymentSettings,
     NetworkDeploymentSettings,
 ) {
-    let zk_key_id =
-        key_id_for_preload_backend(&Key::from(ZkKey::new(config.secret_zk_key.clone())));
+    let zk_key_id = key_id_for_preload_backend(&Key::from(config.secret_zk_key.clone()));
 
     let backend_core = &config.backend_core;
     let backend_edge = &config.backend_edge;
 
     let user = BlendUserConfig {
-        common: blend_serde::common::Config {
-            non_ephemeral_signing_key: config.private_key.clone(),
-            // Disable on-disk recovery in tests to avoid serde issues on replays.
-            recovery_path_prefix: PathBuf::new(),
-        },
+        non_ephemeral_signing_key: config.private_key.clone(),
+        // Persist recovery data under the tempdir so components expecting it
+        // can start cleanly.
+        recovery_path_prefix: PathBuf::from("./recovery/blend"),
         core: blend_serde::core::Config {
             backend: blend_serde::core::BackendConfig {
                 listening_address: backend_core.listening_address.clone(),

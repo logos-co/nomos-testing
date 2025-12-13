@@ -34,6 +34,36 @@ echo "Image tag: ${IMAGE_TAG}"
 echo "Circuits override: ${CIRCUITS_OVERRIDE:-<none>}"
 echo "Circuits version (fallback download): ${VERSION}"
 echo "Circuits platform: ${CIRCUITS_PLATFORM}"
+echo "Bundle tar (if used): ${NOMOS_BINARIES_TAR:-<default>.tmp/nomos-binaries-linux-${VERSION}.tar.gz}"
+
+# If prebuilt binaries are missing, restore them from a bundle tarball instead of
+# rebuilding nomos inside the image.
+BIN_DST="${ROOT_DIR}/testing-framework/assets/stack/bin"
+DEFAULT_LINUX_TAR="${ROOT_DIR}/.tmp/nomos-binaries-linux-${VERSION}.tar.gz"
+TAR_PATH="${NOMOS_BINARIES_TAR:-${DEFAULT_LINUX_TAR}}"
+
+if [ ! -x "${BIN_DST}/nomos-node" ] || [ ! -x "${BIN_DST}/nomos-executor" ]; then
+  if [ -f "${TAR_PATH}" ]; then
+    echo "Restoring binaries/circuits from ${TAR_PATH}"
+    tmp_extract="$(mktemp -d)"
+    tar -xzf "${TAR_PATH}" -C "${tmp_extract}"
+    if [ -f "${tmp_extract}/artifacts/nomos-node" ] && [ -f "${tmp_extract}/artifacts/nomos-executor" ]; then
+      mkdir -p "${BIN_DST}"
+      cp "${tmp_extract}/artifacts/nomos-node" "${tmp_extract}/artifacts/nomos-executor" "${tmp_extract}/artifacts/nomos-cli" "${BIN_DST}/"
+    else
+      echo "ERROR: Bundle ${TAR_PATH} missing binaries under artifacts/" >&2
+      exit 1
+    fi
+    if [ -d "${tmp_extract}/artifacts/circuits" ]; then
+      mkdir -p "${KZG_DIR_REL}"
+      rsync -a --delete "${tmp_extract}/artifacts/circuits/" "${KZG_DIR_REL}/"
+    fi
+    rm -rf "${tmp_extract}"
+  else
+    echo "ERROR: Prebuilt binaries missing and bundle tar not found at ${TAR_PATH}" >&2
+    exit 1
+  fi
+fi
 
 build_args=(
   -f "${DOCKERFILE_PATH}"

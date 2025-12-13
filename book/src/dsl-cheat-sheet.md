@@ -42,8 +42,9 @@ ScenarioBuilder::topology_with(|t| {
 
 ```rust
 .da_with(|da| {
-    da.channel_rate(1)       // 1 channel operation per block
-        .blob_rate(2)        // 2 blob dispersals per block
+    da.channel_rate(1)       // number of DA channels to run
+        .blob_rate(2)        // target 2 blobs per block (headroom applied)
+        .headroom_percent(20)// optional headroom when sizing channels
 })                           // Finish DA workload config
 ```
 
@@ -118,8 +119,9 @@ async fn run_test() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
                 .users(20)
         })
         .da_with(|da| {
-            da.channel_rate(1)             // 1 channel operation per block
-                .blob_rate(2)              // 2 blob dispersals per block
+            da.channel_rate(1)             // number of DA channels
+                .blob_rate(2)              // target 2 blobs per block
+                .headroom_percent(20)      // optional channel headroom
         })
         .expect_consensus_liveness()
         .with_run_duration(Duration::from_secs(90))

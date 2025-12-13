@@ -42,7 +42,7 @@ impl GeneratedNodeConfig {
 
     #[must_use]
     pub const fn network_port(&self) -> u16 {
-        self.general.network_config.backend.inner.port
+        self.general.network_config.backend.swarm.port
     }
 
     #[must_use]
@@ -218,11 +218,11 @@ impl GeneratedTopology {
     fn listen_ports(&self) -> Vec<u16> {
         self.validators
             .iter()
-            .map(|node| node.general.network_config.backend.inner.port)
+            .map(|node| node.general.network_config.backend.swarm.port)
             .chain(
                 self.executors
                     .iter()
-                    .map(|node| node.general.network_config.backend.inner.port),
+                    .map(|node| node.general.network_config.backend.swarm.port),
             )
             .collect()
     }
@@ -258,13 +258,13 @@ impl GeneratedTopology {
             .map(|(idx, node)| {
                 format!(
                     "validator#{idx}@{}",
-                    node.general.network_config.backend.inner.port
+                    node.general.network_config.backend.swarm.port
                 )
             })
             .chain(self.executors.iter().enumerate().map(|(idx, node)| {
                 format!(
                     "executor#{idx}@{}",
-                    node.general.network_config.backend.inner.port
+                    node.general.network_config.backend.swarm.port
                 )
             }))
             .collect()

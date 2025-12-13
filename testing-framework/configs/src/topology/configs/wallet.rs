@@ -1,7 +1,7 @@
 use std::num::NonZeroUsize;
 
+use key_management_system_service::keys::{ZkKey, ZkPublicKey};
 use num_bigint::BigUint;
-use zksign::{PublicKey, SecretKey};
 
 /// Collection of wallet accounts that should be funded at genesis.
 #[derive(Clone, Default, Debug, serde::Serialize, serde::Deserialize)]
@@ -47,13 +47,13 @@ impl WalletConfig {
 #[derive(Clone, Debug, serde::Serialize, serde::Deserialize)]
 pub struct WalletAccount {
     pub label: String,
-    pub secret_key: SecretKey,
+    pub secret_key: ZkKey,
     pub value: u64,
 }
 
 impl WalletAccount {
     #[must_use]
-    pub fn new(label: impl Into<String>, secret_key: SecretKey, value: u64) -> Self {
+    pub fn new(label: impl Into<String>, secret_key: ZkKey, value: u64) -> Self {
         assert!(value > 0, "wallet account value must be positive");
         Self {
             label: label.into(),
@@ -68,12 +68,12 @@ impl WalletAccount {
         seed[..2].copy_from_slice(b"wl");
         seed[2..10].copy_from_slice(&index.to_le_bytes());
 
-        let secret_key = SecretKey::from(BigUint::from_bytes_le(&seed));
+        let secret_key = ZkKey::from(BigUint::from_bytes_le(&seed));
         Self::new(format!("wallet-user-{index}"), secret_key, value)
     }
 
     #[must_use]
-    pub fn public_key(&self) -> PublicKey {
+    pub fn public_key(&self) -> ZkPublicKey {
         self.secret_key.to_public_key()
     }
 }

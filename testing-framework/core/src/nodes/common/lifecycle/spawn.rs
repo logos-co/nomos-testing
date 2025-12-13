@@ -7,6 +7,8 @@ use serde::Serialize;
 use serde_yaml::Value;
 use tracing::debug;
 
+use crate::nodes::common::config::injection::normalize_ed25519_sigs;
+
 /// Configure tracing logger to write into `NOMOS_LOG_DIR` if set, else into the
 /// provided base dir.
 pub fn configure_logging<F>(base_dir: &Path, prefix: &str, set_logger: F)
@@ -40,6 +42,7 @@ where
     let mut yaml_value =
         serde_yaml::to_value(config).map_err(|err| io::Error::new(io::ErrorKind::Other, err))?;
     inject(&mut yaml_value);
+    normalize_ed25519_sigs(&mut yaml_value);
     let file = File::create(path)?;
     serde_yaml::to_writer(file, &yaml_value)
         .map_err(|err| io::Error::new(io::ErrorKind::Other, err))

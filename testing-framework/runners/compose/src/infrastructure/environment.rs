@@ -1,14 +1,15 @@
 use std::{
+    env,
     net::{Ipv4Addr, TcpListener as StdTcpListener},
     path::{Path, PathBuf},
     time::Duration,
 };
 
-use anyhow::anyhow;
+use anyhow::{Context as _, anyhow};
 use testing_framework_core::{
     adjust_timeout, scenario::CleanupGuard, topology::generation::GeneratedTopology,
 };
-use tokio::process::Command;
+use tokio::{process::Command, time::timeout};
 use tracing::{debug, info, warn};
 use uuid::Uuid;
 
@@ -48,6 +49,7 @@ pub struct StackEnvironment {
     workspace: Option<ComposeWorkspace>,
     cfgsync_handle: Option<CfgsyncServerHandle>,
     prometheus_port: u16,
+    grafana_port: u16,
 }
 
 impl StackEnvironment {
@@ -58,6 +60,7 @@ impl StackEnvironment {
         project_name: String,
         cfgsync_handle: Option<CfgsyncServerHandle>,
         prometheus_port: u16,
+        grafana_port: u16,
     ) -> Self {
         let WorkspaceState {
             workspace, root, ..
@@ -70,6 +73,7 @@ impl StackEnvironment {
             workspace: Some(workspace),
             cfgsync_handle,
             prometheus_port,
+            grafana_port,
         }
     }
 
@@ -80,6 +84,11 @@ impl StackEnvironment {
     /// Host port exposed by Prometheus.
     pub const fn prometheus_port(&self) -> u16 {
         self.prometheus_port
+    }
+
+    /// Host port exposed by Grafana.
+    pub const fn grafana_port(&self) -> u16 {
+        self.grafana_port
     }
 
     /// Docker compose project name.
@@ -319,10 +328,12 @@ pub fn write_compose_artifacts(
     descriptors: &GeneratedTopology,
     cfgsync_port: u16,
     prometheus_port: u16,
+    grafana_port: u16,
 ) -> Result<PathBuf, ConfigError> {
     debug!(
         cfgsync_port,
         prometheus_port,
+        grafana_port,
         workspace_root = %workspace.root.display(),
         "building compose descriptor"
     );
@@ -330,6 +341,7 @@ pub fn write_compose_artifacts(
         .with_kzg_mount(workspace.use_kzg)
         .with_cfgsync_port(cfgsync_port)
         .with_prometheus_port(prometheus_port)
+        .with_grafana_port(grafana_port)
         .build()
         .map_err(|source| ConfigError::Descriptor { source })?;
 
@@ -346,13 +358,20 @@ pub fn render_compose_logged(
     descriptors: &GeneratedTopology,
     cfgsync_port: u16,
     prometheus_port: u16,
+    grafana_port: u16,
 ) -> Result<PathBuf, ComposeRunnerError> {
     info!(
         cfgsync_port,
-        prometheus_port, "rendering compose file with ports"
+        prometheus_port, grafana_port, "rendering compose file with ports"
     );
-    write_compose_artifacts(workspace, descriptors, cfgsync_port, prometheus_port)
-        .map_err(Into::into)
+    write_compose_artifacts(
+        workspace,
+        descriptors,
+        cfgsync_port,
+        prometheus_port,
+        grafana_port,
+    )
+    .map_err(Into::into)
 }
 
 /// Bring up docker compose; shut down cfgsync if start-up fails.
@@ -389,6 +408,12 @@ pub async fn prepare_environment(
 ) -> Result<StackEnvironment, ComposeRunnerError> {
     let workspace = prepare_workspace_logged()?;
     let cfgsync_port = allocate_cfgsync_port()?;
+    let grafana_env = env::var("COMPOSE_GRAFANA_PORT")
+        .ok()
+        .and_then(|raw| raw.parse::<u16>().ok());
+    if let Some(port) = grafana_env {
+        info!(port, "using grafana port from env");
+    }
     update_cfgsync_logged(&workspace, descriptors, cfgsync_port)?;
     ensure_compose_image().await?;
 
@@ -401,8 +426,14 @@ pub async fn prepare_environment(
 
     for _ in 0..attempts {
         let prometheus_port_value = prometheus_port.port();
-        let compose_path =
-            render_compose_logged(&workspace, descriptors, cfgsync_port, prometheus_port_value)?;
+        let grafana_port_value = grafana_env.unwrap_or(0);
+        let compose_path = render_compose_logged(
+            &workspace,
+            descriptors,
+            cfgsync_port,
+            prometheus_port_value,
+            grafana_port_value,
+        )?;
 
         let project_name = format!("nomos-compose-{}", Uuid::new_v4());
         let mut cfgsync_handle = start_cfgsync_stage(&workspace, cfgsync_port).await?;
@@ -417,11 +448,22 @@ pub async fn prepare_environment(
         .await
         {
             Ok(()) => {
+                let grafana_port_resolved = resolve_service_port(
+                    &compose_path,
+                    &project_name,
+                    &workspace.root,
+                    "grafana",
+                    3000,
+                )
+                .await
+                .unwrap_or(grafana_port_value);
+
                 info!(
                     project = %project_name,
                     compose_file = %compose_path.display(),
                     cfgsync_port,
                     prometheus_port = prometheus_port_value,
+                    grafana_port = grafana_port_resolved,
                     "compose stack is up"
                 );
                 return Ok(StackEnvironment::from_workspace(
@@ -430,6 +472,7 @@ pub async fn prepare_environment(
                     project_name,
                     Some(cfgsync_handle),
                     prometheus_port_value,
+                    grafana_port_resolved,
                 ));
             }
             Err(err) => {
@@ -465,4 +508,64 @@ fn reserve_prometheus_port(port: u16) -> Option<PortReservation> {
     let listener = StdTcpListener::bind((Ipv4Addr::LOCALHOST, port)).ok()?;
     let actual_port = listener.local_addr().ok()?.port();
     Some(PortReservation::new(actual_port, Some(listener)))
+}
+
+async fn resolve_service_port(
+    compose_file: &Path,
+    project_name: &str,
+    root: &Path,
+    service: &str,
+    container_port: u16,
+) -> Result<u16, ComposeRunnerError> {
+    let mut cmd = Command::new("docker");
+    cmd.arg("compose")
+        .arg("-f")
+        .arg(compose_file)
+        .arg("-p")
+        .arg(project_name)
+        .arg("port")
+        .arg(service)
+        .arg(container_port.to_string())
+        .current_dir(root);
+
+    let output = timeout(adjust_timeout(Duration::from_secs(30)), cmd.output())
+        .await
+        .map_err(|_| ComposeRunnerError::PortDiscovery {
+            service: service.to_owned(),
+            container_port,
+            source: anyhow!("docker compose port timed out"),
+        })?
+        .with_context(|| format!("running docker compose port {service} {container_port}"))
+        .map_err(|source| ComposeRunnerError::PortDiscovery {
+            service: service.to_owned(),
+            container_port,
+            source,
+        })?;
+
+    if !output.status.success() {
+        return Err(ComposeRunnerError::PortDiscovery {
+            service: service.to_owned(),
+            container_port,
+            source: anyhow!("docker compose port exited with {}", output.status),
+        });
+    }
+
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    for line in stdout.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        if let Some(port_str) = line.rsplit(':').next()
+            && let Ok(port) = port_str.trim().parse::<u16>()
+        {
+            return Ok(port);
+        }
+    }
+
+    Err(ComposeRunnerError::PortDiscovery {
+        service: service.to_owned(),
+        container_port,
+        source: anyhow!("unable to parse docker compose port output: {stdout}"),
+    })
 }

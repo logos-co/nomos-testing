@@ -158,6 +158,7 @@ pub struct DataAvailabilityFlowBuilder<Caps> {
     builder: CoreScenarioBuilder<Caps>,
     channel_rate: NonZeroU64,
     blob_rate: NonZeroU64,
+    headroom_percent: u64,
 }
 
 impl<Caps> DataAvailabilityFlowBuilder<Caps> {
@@ -174,18 +175,19 @@ impl<Caps> DataAvailabilityFlowBuilder<Caps> {
             builder,
             channel_rate: Self::default_channel_rate(),
             blob_rate: Self::default_blob_rate(),
+            headroom_percent: da::Workload::default_headroom_percent(),
         }
     }
 
     #[must_use]
-    /// Set channel publish rate per block (panics on zero).
+    /// Set the number of DA channels to run (panics on zero).
     pub const fn channel_rate(mut self, rate: u64) -> Self {
         self.channel_rate = channel_rate_checked(rate);
         self
     }
 
     #[must_use]
-    /// Set channel publish rate per block.
+    /// Set the number of DA channels to run.
     pub const fn channel_rate_per_block(mut self, rate: NonZeroU64) -> Self {
         self.channel_rate = rate;
         self
@@ -206,13 +208,20 @@ impl<Caps> DataAvailabilityFlowBuilder<Caps> {
     }
 
     #[must_use]
+    /// Apply headroom when converting blob rate into channel count.
+    pub const fn headroom_percent(mut self, percent: u64) -> Self {
+        self.headroom_percent = percent;
+        self
+    }
+
+    #[must_use]
     pub fn apply(mut self) -> CoreScenarioBuilder<Caps> {
-        let count = (self.channel_rate.get() * self.blob_rate.get()) as usize;
-        let workload = da::Workload::with_channel_count(count.max(1));
+        let workload =
+            da::Workload::with_rate(self.blob_rate, self.channel_rate, self.headroom_percent);
         tracing::info!(
             channel_rate = self.channel_rate.get(),
             blob_rate = self.blob_rate.get(),
-            channels = count.max(1),
+            headroom_percent = self.headroom_percent,
             "attaching data-availability workload"
         );
         self.builder = self.builder.with_workload(workload);

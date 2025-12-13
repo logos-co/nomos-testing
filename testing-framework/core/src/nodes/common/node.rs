@@ -16,7 +16,7 @@ use super::lifecycle::monitor::is_running;
 use crate::nodes::{
     ApiClient,
     common::{config::paths::ensure_recovery_paths, lifecycle::spawn::configure_logging},
-    create_tempdir,
+    create_tempdir, persist_tempdir,
 };
 
 /// Minimal interface to apply common node setup.
@@ -137,10 +137,10 @@ where
         .spawn()
         .expect("failed to spawn node process");
 
-    let handle = NodeHandle::new(child, dir, config, ApiClient::new(addr, testing_addr));
+    let mut handle = NodeHandle::new(child, dir, config, ApiClient::new(addr, testing_addr));
 
     // Wait for readiness via consensus_info
-    time::timeout(Duration::from_secs(60), async {
+    let ready = time::timeout(Duration::from_secs(60), async {
         loop {
             if handle.api.consensus_info().await.is_ok() {
                 break;
@@ -148,7 +148,13 @@ where
             time::sleep(Duration::from_millis(100)).await;
         }
     })
-    .await?;
+    .await;
+
+    if let Err(err) = ready {
+        // Persist tempdir to aid debugging if readiness fails.
+        let _ = persist_tempdir(&mut handle.tempdir, "nomos-node");
+        return Err(err);
+    }
 
     info!("node readiness confirmed via consensus_info");
     Ok(handle)

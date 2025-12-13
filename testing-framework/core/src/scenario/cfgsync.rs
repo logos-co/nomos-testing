@@ -116,7 +116,6 @@ pub fn apply_topology_overrides(
     cfg.replication_settings = da.replication_settings;
     cfg.retry_shares_limit = da.retry_shares_limit;
     cfg.retry_commitments_limit = da.retry_commitments_limit;
-    cfg.tracing_settings = TracingSettings::default();
 }
 
 #[serde_as]

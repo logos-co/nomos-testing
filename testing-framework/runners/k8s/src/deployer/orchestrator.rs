@@ -150,6 +150,11 @@ impl Deployer for K8sDeployer {
                 return Err(err);
             }
         };
+
+        tracing::info!(
+            grafana_url = %format!("http://{}:{}/", crate::host::node_host(), 30030),
+            "grafana dashboard available via NodePort"
+        );
         let (cleanup, port_forwards) = cluster
             .take()
             .expect("cluster should still be available")

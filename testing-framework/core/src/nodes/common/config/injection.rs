@@ -1,5 +1,34 @@
 use serde_yaml::{Mapping, Number as YamlNumber, Value};
 
+/// Convert any ed25519_sig entries from a YAML sequence of bytes into the
+/// hex-encoded string format expected by nomos-node config deserialization.
+pub fn normalize_ed25519_sigs(value: &mut Value) {
+    match value {
+        Value::Mapping(map) => {
+            for (k, v) in map.iter_mut() {
+                if let Value::String(key) = k {
+                    if key == "ed25519_sig" {
+                        if let Value::Sequence(seq) = v {
+                            let bytes: Option<Vec<u8>> = seq
+                                .iter()
+                                .map(|val| val.as_i64().and_then(|n| u8::try_from(n).ok()))
+                                .collect();
+                            if let Some(bytes) = bytes {
+                                *v = Value::String(hex::encode(bytes));
+                                continue;
+                            }
+                        }
+                    }
+                }
+                normalize_ed25519_sigs(v);
+            }
+        }
+        Value::Sequence(seq) => seq.iter_mut().for_each(normalize_ed25519_sigs),
+        Value::Tagged(tagged) => normalize_ed25519_sigs(&mut tagged.value),
+        _ => {}
+    }
+}
+
 /// Inject cryptarchia/IBD defaults into a YAML config in-place.
 pub fn inject_ibd_into_cryptarchia(yaml_value: &mut Value) {
     let Some(cryptarchia) = cryptarchia_section(yaml_value) else {
@@ -8,6 +37,7 @@ pub fn inject_ibd_into_cryptarchia(yaml_value: &mut Value) {
     ensure_network_adapter(cryptarchia);
     ensure_sync_defaults(cryptarchia);
     ensure_ibd_bootstrap(cryptarchia);
+    normalize_ed25519_sigs(yaml_value);
 }
 
 fn cryptarchia_section(yaml_value: &mut Value) -> Option<&mut Mapping> {

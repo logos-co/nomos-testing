@@ -103,7 +103,7 @@ async fn da_and_transactions() -> Result<(), Box<dyn std::error::Error + Send + 
                 .users(15)
         })
         .da_with(|da| {
-            da.channel_rate(1)
+            da.channel_rate(2)
                 .blob_rate(2)
         })
         .expect_consensus_liveness()

@@ -1,6 +1,6 @@
 use serde::Serialize;
 use testing_framework_core::{
-    constants::{DEFAULT_CFGSYNC_PORT, kzg_container_path},
+    constants::{DEFAULT_CFGSYNC_PORT, DEFAULT_PROMETHEUS_HTTP_PORT, kzg_container_path},
     topology::generation::{GeneratedNodeConfig, GeneratedTopology},
 };
 
@@ -21,6 +21,7 @@ pub enum DescriptorBuildError {
 #[derive(Clone, Debug, Serialize)]
 pub struct ComposeDescriptor {
     prometheus: PrometheusTemplate,
+    grafana: GrafanaTemplate,
     validators: Vec<NodeDescriptor>,
     executors: Vec<NodeDescriptor>,
 }
@@ -50,6 +51,7 @@ pub struct ComposeDescriptorBuilder<'a> {
     use_kzg_mount: bool,
     cfgsync_port: Option<u16>,
     prometheus_port: Option<u16>,
+    grafana_port: Option<u16>,
 }
 
 impl<'a> ComposeDescriptorBuilder<'a> {
@@ -59,6 +61,7 @@ impl<'a> ComposeDescriptorBuilder<'a> {
             use_kzg_mount: false,
             cfgsync_port: None,
             prometheus_port: None,
+            grafana_port: None,
         }
     }
 
@@ -83,12 +86,20 @@ impl<'a> ComposeDescriptorBuilder<'a> {
         self
     }
 
+    #[must_use]
+    /// Set host port mapping for Grafana.
+    pub const fn with_grafana_port(mut self, port: u16) -> Self {
+        self.grafana_port = Some(port);
+        self
+    }
+
     /// Finish building the descriptor, erroring if required fields are missing.
     pub fn build(self) -> Result<ComposeDescriptor, DescriptorBuildError> {
         let cfgsync_port = self.cfgsync_port.unwrap_or(DEFAULT_CFGSYNC_PORT);
         let prometheus_host_port = self
             .prometheus_port
             .ok_or(DescriptorBuildError::MissingPrometheusPort)?;
+        let grafana_host_port = self.grafana_port.unwrap_or(0);
 
         let (image, platform) = resolve_image();
         // Prometheus image is x86_64-only on some tags; set platform when on arm hosts.
@@ -117,6 +128,7 @@ impl<'a> ComposeDescriptorBuilder<'a> {
 
         Ok(ComposeDescriptor {
             prometheus: PrometheusTemplate::new(prometheus_host_port, prometheus_platform),
+            grafana: GrafanaTemplate::new(grafana_host_port),
             validators,
             executors,
         })
@@ -134,12 +146,26 @@ pub struct PrometheusTemplate {
 impl PrometheusTemplate {
     fn new(port: u16, platform: Option<String>) -> Self {
         Self {
-            host_port: format!(
-                "127.0.0.1:{port}:{}",
-                testing_framework_core::constants::DEFAULT_PROMETHEUS_HTTP_PORT
-            ),
+            host_port: format!("127.0.0.1:{port}:{}", DEFAULT_PROMETHEUS_HTTP_PORT),
             platform,
         }
+    }
+}
+
+/// Minimal Grafana service mapping used in the compose template.
+#[derive(Clone, Debug, Serialize)]
+pub struct GrafanaTemplate {
+    host_port: String,
+}
+
+impl GrafanaTemplate {
+    fn new(port: u16) -> Self {
+        let host_port = match port {
+            0 => "127.0.0.1::3000".to_string(), // docker assigns host port
+            _ => format!("127.0.0.1:{port}:3000"),
+        };
+
+        Self { host_port }
     }
 }
 

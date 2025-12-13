@@ -40,15 +40,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "aligned-vec"
-version = "0.6.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dc890384c8602f339876ded803c97ad529f3842aba97f6392b3dba0dd171769b"
-dependencies = [
- "equator",
-]
-
-[[package]]
 name = "allocator-api2"
 version = "0.2.21"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -62,12 +53,6 @@ checksum = "819e7219dbd41043ac279b19830f2efc897156490d7fd6ea916720117ee66311"
 dependencies = [
  "libc",
 ]
-
-[[package]]
-name = "anes"
-version = "0.1.6"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4b46cbb362ab8752921c97e041f5e366ee6297bd428a31275b9fcf1e380f7299"
 
 [[package]]
 name = "anstyle"
@@ -523,7 +508,7 @@ dependencies = [
  "futures-lite",
  "parking",
  "polling",
- "rustix 1.1.2",
+ "rustix",
  "slab",
  "windows-sys 0.61.2",
 ]
@@ -851,7 +836,6 @@ dependencies = [
 [[package]]
 name = "broadcast-service"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "derivative",
@@ -933,12 +917,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "cast"
-version = "0.3.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "37b2a672a2cb129a2e41c10b1224bb368f9f37a2b16b612598138befd7b37eb5"
-
-[[package]]
 name = "cc"
 version = "1.2.47"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1016,7 +994,6 @@ dependencies = [
 [[package]]
 name = "chain-common"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "nomos-core",
  "serde",
@@ -1025,14 +1002,13 @@ dependencies = [
 [[package]]
 name = "chain-leader"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "chain-common",
  "chain-service",
  "cryptarchia-engine",
- "ed25519-dalek",
  "futures",
+ "key-management-system-keys",
  "nomos-blend-service",
  "nomos-core",
  "nomos-da-sampling",
@@ -1047,13 +1023,11 @@ dependencies = [
  "tracing",
  "tracing-futures",
  "tx-service",
- "zksign",
 ]
 
 [[package]]
 name = "chain-network"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "chain-common",
@@ -1082,14 +1056,12 @@ dependencies = [
 [[package]]
 name = "chain-service"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "broadcast-service",
  "bytes",
  "cryptarchia-engine",
  "cryptarchia-sync",
- "ed25519-dalek",
  "futures",
  "groth16",
  "nomos-core",
@@ -1144,33 +1116,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "ciborium"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "42e69ffd6f0917f5c029256a24d0161db17cea3997d185db0d35926308770f0e"
-dependencies = [
- "ciborium-io",
- "ciborium-ll",
- "serde",
-]
-
-[[package]]
-name = "ciborium-io"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "05afea1e0a06c9be33d539b876f1ce3692f4afea2cb41f740e7743225ed1c757"
-
-[[package]]
-name = "ciborium-ll"
-version = "0.2.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "57663b653d948a338bfb3eeba9bb2fd5fcfaecb9e199e87e1eda4d9e8b240fd9"
-dependencies = [
- "ciborium-io",
- "half",
-]
-
-[[package]]
 name = "cipher"
 version = "0.4.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1183,7 +1128,6 @@ dependencies = [
 [[package]]
 name = "circuits-prover"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "circuits-utils",
  "tempfile",
@@ -1192,7 +1136,6 @@ dependencies = [
 [[package]]
 name = "circuits-utils"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "dirs",
 ]
@@ -1262,7 +1205,6 @@ dependencies = [
 [[package]]
 name = "common-http-client"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "broadcast-service",
  "futures",
@@ -1371,42 +1313,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "criterion"
-version = "0.5.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f2b12d017a929603d80db1831cd3a24082f8137ce19c69e6447f54f5fc8d692f"
-dependencies = [
- "anes",
- "cast",
- "ciborium",
- "clap",
- "criterion-plot",
- "is-terminal",
- "itertools 0.10.5",
- "num-traits",
- "once_cell",
- "oorandom",
- "plotters",
- "rayon",
- "regex",
- "serde",
- "serde_derive",
- "serde_json",
- "tinytemplate",
- "walkdir",
-]
-
-[[package]]
-name = "criterion-plot"
-version = "0.5.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "6b50826342786a51a89e2da3a28f1c32b06e387201bc2d19791f622c673706b1"
-dependencies = [
- "cast",
- "itertools 0.10.5",
-]
-
-[[package]]
 name = "crossbeam-channel"
 version = "0.5.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1449,7 +1355,6 @@ checksum = "460fbee9c2c2f33933d720630a6a0bac33ba7053db5344fac858d4b8952d77d5"
 [[package]]
 name = "cryptarchia-engine"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "cfg_eval",
  "nomos-utils",
@@ -1464,7 +1369,6 @@ dependencies = [
 [[package]]
 name = "cryptarchia-sync"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "bytes",
  "cryptarchia-engine",
@@ -1613,15 +1517,6 @@ checksum = "8d162beedaa69905488a8da94f5ac3edb4dd4788b732fadb7bd120b2625c1976"
 dependencies = [
  "data-encoding",
  "syn 2.0.111",
-]
-
-[[package]]
-name = "debugid"
-version = "0.8.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bef552e6f588e446098f6ba40d89ac146c8c7b64aade83c051ee00bb5d2bc18d"
-dependencies = [
- "uuid",
 ]
 
 [[package]]
@@ -1909,26 +1804,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "equator"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4711b213838dfee0117e3be6ac926007d7f433d7bbe33595975d4190cb07e6fc"
-dependencies = [
- "equator-macro",
-]
-
-[[package]]
-name = "equator-macro"
-version = "0.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "44f23cf4b44bfce11a86ace86f8a73ffdec849c9fd00a386a53d278bd9e81fb3"
-dependencies = [
- "proc-macro2",
- "quote",
- "syn 2.0.111",
-]
-
-[[package]]
 name = "equivalent"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1968,7 +1843,6 @@ dependencies = [
 [[package]]
 name = "executor-http-client"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "common-http-client",
  "futures",
@@ -1976,6 +1850,8 @@ dependencies = [
  "nomos-http-api-common",
  "reqwest",
  "serde",
+ "serde_json",
+ "tracing",
 ]
 
 [[package]]
@@ -2015,18 +1891,6 @@ name = "find-msvc-tools"
 version = "0.1.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "3a3076410a55c90011c298b04d0cfa770b00fa04e1e3c97d3f6c9de105a03844"
-
-[[package]]
-name = "findshlibs"
-version = "0.10.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "40b9e59cd0f7e0806cca4be089683ecb6434e602038df21fe6bf6711b2f07f64"
-dependencies = [
- "cc",
- "lazy_static",
- "libc",
- "winapi",
-]
 
 [[package]]
 name = "fixed"
@@ -2360,7 +2224,6 @@ dependencies = [
 [[package]]
 name = "groth16"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "ark-bn254 0.4.0",
  "ark-ec 0.4.2",
@@ -3060,24 +2923,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "inferno"
-version = "0.11.21"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "232929e1d75fe899576a3d5c7416ad0d88dbfbb3c3d6aa00873a7408a50ddb88"
-dependencies = [
- "ahash",
- "indexmap 2.12.1",
- "is-terminal",
- "itoa",
- "log",
- "num-format",
- "once_cell",
- "quick-xml",
- "rgb",
- "str_stack",
-]
-
-[[package]]
 name = "inout"
 version = "0.1.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3121,17 +2966,6 @@ checksum = "4f867b9d1d896b67beb18518eda36fdb77a32ea590de864f1325b294a6d14397"
 dependencies = [
  "memchr",
  "serde",
-]
-
-[[package]]
-name = "is-terminal"
-version = "0.4.17"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3640c1c38b8e4e43584d8df18be5fc6b0aa314ce6ebf51b53313d4306cca8e46"
-dependencies = [
- "hermit-abi",
- "libc",
- "windows-sys 0.61.2",
 ]
 
 [[package]]
@@ -3285,15 +3119,19 @@ dependencies = [
 [[package]]
 name = "key-management-system-keys"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "bytes",
  "ed25519-dalek",
+ "generic-array 1.3.5",
  "groth16",
+ "hex",
  "key-management-system-macros",
  "nomos-blend-proofs",
  "nomos-utils",
+ "num-bigint",
+ "poseidon2",
+ "rand_core 0.6.4",
  "serde",
  "subtle",
  "thiserror 2.0.17",
@@ -3306,7 +3144,6 @@ dependencies = [
 [[package]]
 name = "key-management-system-macros"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -3316,7 +3153,6 @@ dependencies = [
 [[package]]
 name = "key-management-system-service"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "key-management-system-keys",
@@ -3422,7 +3258,6 @@ dependencies = [
 [[package]]
 name = "kzgrs"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "ark-bls12-381",
  "ark-ec 0.4.2",
@@ -3441,7 +3276,6 @@ dependencies = [
 [[package]]
 name = "kzgrs-backend"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "ark-ff 0.4.2",
  "ark-poly 0.4.2",
@@ -3925,12 +3759,6 @@ dependencies = [
 
 [[package]]
 name = "linux-raw-sys"
-version = "0.4.15"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d26c52dbd32dccf2d10cac7725f8eae5296885fb5703b261f7d0a0739ec807ab"
-
-[[package]]
-name = "linux-raw-sys"
 version = "0.11.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "df1d3c3b53da64cf5760482273a98e575c651a67eec7f77df96b5b642de8f039"
@@ -4026,15 +3854,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "f52b00d39961fc5b2736ea853c9cc86238e165017a493d1d5c8eac6bdc4cc273"
 
 [[package]]
-name = "memmap2"
-version = "0.9.9"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "744133e4a0e0a658e1374cf3bf8e415c4052a15a111acd372764c55b4177d490"
-dependencies = [
- "libc",
-]
-
-[[package]]
 name = "mime"
 version = "0.3.17"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4080,7 +3899,6 @@ dependencies = [
 [[package]]
 name = "mmr"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "ark-ff 0.4.2",
  "groth16",
@@ -4367,7 +4185,6 @@ dependencies = [
 [[package]]
 name = "nomos-api"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "broadcast-service",
@@ -4400,7 +4217,6 @@ dependencies = [
 [[package]]
 name = "nomos-blend"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "nomos-blend-crypto",
  "nomos-blend-message",
@@ -4412,10 +4228,8 @@ dependencies = [
 [[package]]
 name = "nomos-blend-crypto"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "blake2",
- "ed25519-dalek",
  "groth16",
  "nomos-utils",
  "poq",
@@ -4426,19 +4240,15 @@ dependencies = [
  "thiserror 1.0.69",
  "x25519-dalek",
  "zeroize",
- "zksign",
 ]
 
 [[package]]
 name = "nomos-blend-message"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "blake2",
  "derivative",
- "ed25519-dalek",
  "groth16",
- "hex",
  "itertools 0.14.0",
  "key-management-system-keys",
  "nomos-blend-crypto",
@@ -4456,14 +4266,12 @@ dependencies = [
 [[package]]
 name = "nomos-blend-network"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "either",
  "futures",
  "futures-timer",
  "key-management-system-keys",
  "libp2p",
- "nomos-blend-crypto",
  "nomos-blend-message",
  "nomos-blend-proofs",
  "nomos-blend-scheduling",
@@ -4475,8 +4283,8 @@ dependencies = [
 [[package]]
 name = "nomos-blend-proofs"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
+ "ed25519-dalek",
  "generic-array 1.3.5",
  "groth16",
  "nomos-blend-crypto",
@@ -4489,7 +4297,6 @@ dependencies = [
 [[package]]
 name = "nomos-blend-scheduling"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "derivative",
@@ -4513,7 +4320,6 @@ dependencies = [
 [[package]]
 name = "nomos-blend-service"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "broadcast-service",
@@ -4530,6 +4336,7 @@ dependencies = [
  "nomos-ledger",
  "nomos-libp2p",
  "nomos-network",
+ "nomos-sdp",
  "nomos-time",
  "nomos-utils",
  "overwatch",
@@ -4542,13 +4349,11 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
- "zksign",
 ]
 
 [[package]]
 name = "nomos-core"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "ark-ff 0.4.2",
  "async-trait",
@@ -4557,38 +4362,32 @@ dependencies = [
  "bytes",
  "const-hex",
  "cryptarchia-engine",
- "ed25519",
- "ed25519-dalek",
  "futures",
  "generic-array 1.3.5",
  "groth16",
  "hex",
+ "key-management-system-keys",
  "multiaddr",
  "nom 8.0.0",
- "nomos-blend-crypto",
  "nomos-blend-proofs",
  "nomos-utils",
  "num-bigint",
  "pol",
  "poseidon2",
  "serde",
- "serde_with",
  "strum",
  "thiserror 1.0.69",
  "tracing",
- "zksign",
 ]
 
 [[package]]
 name = "nomos-da-dispersal"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "broadcast-service",
- "ed25519",
- "ed25519-dalek",
  "futures",
+ "key-management-system-keys",
  "kzgrs-backend",
  "nomos-core",
  "nomos-da-network-core",
@@ -4604,13 +4403,11 @@ dependencies = [
  "tokio",
  "tokio-stream",
  "tracing",
- "zksign",
 ]
 
 [[package]]
 name = "nomos-da-messages"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "blake2",
  "futures",
@@ -4623,7 +4420,6 @@ dependencies = [
 [[package]]
 name = "nomos-da-network-core"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "cached",
  "either",
@@ -4651,7 +4447,6 @@ dependencies = [
 [[package]]
 name = "nomos-da-network-service"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "arc-swap",
  "async-trait",
@@ -4688,7 +4483,6 @@ dependencies = [
 [[package]]
 name = "nomos-da-sampling"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4716,7 +4510,6 @@ dependencies = [
 [[package]]
 name = "nomos-da-verifier"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "futures",
@@ -4743,7 +4536,6 @@ dependencies = [
 [[package]]
 name = "nomos-executor"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "axum",
@@ -4768,7 +4560,6 @@ dependencies = [
  "nomos-time",
  "overwatch",
  "serde",
- "serde_yaml",
  "services-utils",
  "subnetworks-assignations",
  "tokio",
@@ -4783,15 +4574,15 @@ dependencies = [
 [[package]]
 name = "nomos-http-api-common"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "axum",
  "governor",
+ "hex",
+ "key-management-system-keys",
  "nomos-core",
- "pprof",
  "serde",
+ "serde_json",
  "serde_with",
- "tokio",
  "tower_governor",
  "tracing",
 ]
@@ -4799,11 +4590,10 @@ dependencies = [
 [[package]]
 name = "nomos-ledger"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "cryptarchia-engine",
- "ed25519",
  "groth16",
+ "key-management-system-keys",
  "mmr",
  "nomos-blend-crypto",
  "nomos-blend-message",
@@ -4817,13 +4607,11 @@ dependencies = [
  "thiserror 1.0.69",
  "tracing",
  "utxotree",
- "zksign",
 ]
 
 [[package]]
 name = "nomos-libp2p"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "backon",
@@ -4852,7 +4640,6 @@ dependencies = [
 [[package]]
 name = "nomos-network"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "cryptarchia-sync",
@@ -4871,7 +4658,6 @@ dependencies = [
 [[package]]
 name = "nomos-node"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "axum",
@@ -4915,11 +4701,13 @@ dependencies = [
  "pol",
  "poq",
  "serde",
+ "serde_ignored",
  "serde_json",
  "serde_with",
  "serde_yaml",
  "services-utils",
  "subnetworks-assignations",
+ "thiserror 2.0.17",
  "time",
  "tokio",
  "tokio-stream",
@@ -4929,17 +4717,15 @@ dependencies = [
  "tx-service",
  "utoipa",
  "utoipa-swagger-ui",
- "zksign",
 ]
 
 [[package]]
 name = "nomos-sdp"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
- "ed25519-dalek",
  "futures",
+ "key-management-system-keys",
  "nomos-core",
  "overwatch",
  "serde",
@@ -4948,13 +4734,11 @@ dependencies = [
  "tokio-stream",
  "tracing",
  "tx-service",
- "zksign",
 ]
 
 [[package]]
 name = "nomos-storage"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "bytes",
@@ -4974,7 +4758,6 @@ dependencies = [
 [[package]]
 name = "nomos-system-sig"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-ctrlc",
  "async-trait",
@@ -4985,7 +4768,6 @@ dependencies = [
 [[package]]
 name = "nomos-time"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "cfg_eval",
@@ -5007,7 +4789,6 @@ dependencies = [
 [[package]]
 name = "nomos-tracing"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "opentelemetry",
  "opentelemetry-http",
@@ -5030,7 +4811,6 @@ dependencies = [
 [[package]]
 name = "nomos-tracing-service"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "nomos-tracing",
@@ -5044,7 +4824,6 @@ dependencies = [
 [[package]]
 name = "nomos-utils"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "blake2",
@@ -5061,7 +4840,6 @@ dependencies = [
 [[package]]
 name = "nomos-wallet"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "bytes",
@@ -5080,7 +4858,6 @@ dependencies = [
  "tokio",
  "tracing",
  "wallet",
- "zksign",
 ]
 
 [[package]]
@@ -5119,16 +4896,6 @@ name = "num-conv"
 version = "0.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51d515d32fb182ee37cda2ccdcb92950d6a3c2893aa280e540671c2cd0f3b1d9"
-
-[[package]]
-name = "num-format"
-version = "0.4.4"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a652d9771a63711fd3c3deb670acfbe5c30a4072e664d7a3bf5a9e1056ac72c3"
-dependencies = [
- "arrayvec",
- "itoa",
-]
 
 [[package]]
 name = "num-integer"
@@ -5218,12 +4985,6 @@ name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
-
-[[package]]
-name = "oorandom"
-version = "11.1.5"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d6790f58c7ff633d8771f42965289203411a5e5c68388703c06e14f24770b41e"
 
 [[package]]
 name = "openssl"
@@ -5591,37 +5352,8 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7edddbd0b52d732b21ad9a5fab5c704c14cd949e5e9a1ec5929a24fded1b904c"
 
 [[package]]
-name = "plotters"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5aeb6f403d7a4911efb1e33402027fc44f29b5bf6def3effcc22d7bb75f2b747"
-dependencies = [
- "num-traits",
- "plotters-backend",
- "plotters-svg",
- "wasm-bindgen",
- "web-sys",
-]
-
-[[package]]
-name = "plotters-backend"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "df42e13c12958a16b3f7f4386b9ab1f3e7933914ecea48da7139435263a4172a"
-
-[[package]]
-name = "plotters-svg"
-version = "0.3.7"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "51bae2ac328883f7acdfea3d66a7c35751187f870bc81f94563733a154d7a670"
-dependencies = [
- "plotters-backend",
-]
-
-[[package]]
 name = "pol"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "circuits-prover",
  "circuits-utils",
@@ -5644,14 +5376,13 @@ dependencies = [
  "concurrent-queue",
  "hermit-abi",
  "pin-project-lite",
- "rustix 1.1.2",
+ "rustix",
  "windows-sys 0.61.2",
 ]
 
 [[package]]
 name = "poq"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "circuits-prover",
  "circuits-utils",
@@ -5673,7 +5404,6 @@ checksum = "f84267b20a16ea918e43c6a88433c2d54fa145c92a811b5b047ccbe153674483"
 [[package]]
 name = "poseidon2"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "ark-bn254 0.4.0",
  "ark-ff 0.4.2",
@@ -5695,31 +5425,6 @@ name = "powerfmt"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "439ee305def115ba05938db6eb1644ff94165c5ab5e9420d1c1bcedbba909391"
-
-[[package]]
-name = "pprof"
-version = "0.15.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "38a01da47675efa7673b032bf8efd8214f1917d89685e07e395ab125ea42b187"
-dependencies = [
- "aligned-vec",
- "backtrace",
- "cfg-if",
- "criterion",
- "findshlibs",
- "inferno",
- "libc",
- "log",
- "nix 0.26.4",
- "once_cell",
- "protobuf",
- "protobuf-codegen",
- "smallvec",
- "spin",
- "symbolic-demangle",
- "tempfile",
- "thiserror 2.0.17",
-]
 
 [[package]]
 name = "ppv-lite86"
@@ -5878,57 +5583,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "protobuf"
-version = "3.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d65a1d4ddae7d8b5de68153b48f6aa3bba8cb002b243dbdbc55a5afbc98f99f4"
-dependencies = [
- "once_cell",
- "protobuf-support",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "protobuf-codegen"
-version = "3.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5d3976825c0014bbd2f3b34f0001876604fe87e0c86cd8fa54251530f1544ace"
-dependencies = [
- "anyhow",
- "once_cell",
- "protobuf",
- "protobuf-parse",
- "regex",
- "tempfile",
- "thiserror 1.0.69",
-]
-
-[[package]]
-name = "protobuf-parse"
-version = "3.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b4aeaa1f2460f1d348eeaeed86aea999ce98c1bded6f089ff8514c9d9dbdc973"
-dependencies = [
- "anyhow",
- "indexmap 2.12.1",
- "log",
- "protobuf",
- "protobuf-support",
- "tempfile",
- "thiserror 1.0.69",
- "which",
-]
-
-[[package]]
-name = "protobuf-support"
-version = "3.7.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "3e36c2f31e0a47f9280fb347ef5e461ffcd2c52dd520d8e216b52f93b0b0d7d6"
-dependencies = [
- "thiserror 1.0.69",
-]
-
-[[package]]
 name = "quanta"
 version = "0.12.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -5963,15 +5617,6 @@ dependencies = [
  "quick-protobuf",
  "thiserror 1.0.69",
  "unsigned-varint 0.8.0",
-]
-
-[[package]]
-name = "quick-xml"
-version = "0.26.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7f50b1c63b38611e7d4d7f68b82d3ad0cc71a2ad2e7f61fc10f1328d917c93cd"
-dependencies = [
- "memchr",
 ]
 
 [[package]]
@@ -6129,26 +5774,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "rayon"
-version = "1.11.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "368f01d005bf8fd9b1206fb6fa653e6c4a81ceb1466406b81792d87c5677a58f"
-dependencies = [
- "either",
- "rayon-core",
-]
-
-[[package]]
-name = "rayon-core"
-version = "1.13.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "22e18b0f0062d30d4230b2e85ff77fdfe4326feb054b9783a3460d8435c8ab91"
-dependencies = [
- "crossbeam-deque",
- "crossbeam-utils",
-]
-
-[[package]]
 name = "rcgen"
 version = "0.13.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6269,15 +5894,6 @@ checksum = "f8dd2a808d456c4a54e300a23e9f5a67e122c3024119acbfd73e3bf664491cb2"
 dependencies = [
  "hmac",
  "subtle",
-]
-
-[[package]]
-name = "rgb"
-version = "0.8.52"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c6a884d2998352bb4daf0183589aec883f16a6da1f4dde84d8e2e9a5409a1ce"
-dependencies = [
- "bytemuck",
 ]
 
 [[package]]
@@ -6431,19 +6047,6 @@ dependencies = [
 
 [[package]]
 name = "rustix"
-version = "0.38.44"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fdb5bc1ae2baa591800df16c9ca78619bf65c0488b41b96ccec5d11220d8c154"
-dependencies = [
- "bitflags 2.10.0",
- "errno",
- "libc",
- "linux-raw-sys 0.4.15",
- "windows-sys 0.59.0",
-]
-
-[[package]]
-name = "rustix"
 version = "1.1.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cd15f8a2c5551a84d56efdc1cd049089e409ac19a3072d5037a17fd70719ff3e"
@@ -6451,7 +6054,7 @@ dependencies = [
  "bitflags 2.10.0",
  "errno",
  "libc",
- "linux-raw-sys 0.11.0",
+ "linux-raw-sys",
  "windows-sys 0.61.2",
 ]
 
@@ -6708,6 +6311,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "serde_ignored"
+version = "0.1.14"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "115dffd5f3853e06e746965a20dcbae6ee747ae30b543d91b0e089668bb07798"
+dependencies = [
+ "serde",
+ "serde_core",
+]
+
+[[package]]
 name = "serde_json"
 version = "1.0.145"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6811,7 +6424,6 @@ dependencies = [
 [[package]]
 name = "services-utils"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "futures",
@@ -6939,15 +6551,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "spin"
-version = "0.10.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d5fe4ccb98d9c292d56fec89a5e07da7fc4cf0dc11e156b41793132775d3e591"
-dependencies = [
- "lock_api",
-]
-
-[[package]]
 name = "spinning_top"
 version = "0.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -6979,12 +6582,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2eb9349b6444b326872e140eb1cf5e7c522154d69e7a0ffb0fb81c06b37543f"
 
 [[package]]
-name = "str_stack"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9091b6114800a5f2141aee1d1b9d6ca3592ac062dc5decb3764ec5895a47b4eb"
-
-[[package]]
 name = "strsim"
 version = "0.11.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -7014,7 +6611,6 @@ dependencies = [
 [[package]]
 name = "subnetworks-assignations"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "counter",
  "libp2p-identity",
@@ -7029,28 +6625,6 @@ name = "subtle"
 version = "2.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "13c2bddecc57b384dee18652358fb23172facb8a2c51ccc10d74c157bdea3292"
-
-[[package]]
-name = "symbolic-common"
-version = "12.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b3d8046c5674ab857104bc4559d505f4809b8060d57806e45d49737c97afeb60"
-dependencies = [
- "debugid",
- "memmap2",
- "stable_deref_trait",
- "uuid",
-]
-
-[[package]]
-name = "symbolic-demangle"
-version = "12.17.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1accb6e5c4b0f682de907623912e616b44be1c9e725775155546669dbff720ec"
-dependencies = [
- "rustc-demangle",
- "symbolic-common",
-]
 
 [[package]]
 name = "syn"
@@ -7157,7 +6731,7 @@ dependencies = [
  "fastrand",
  "getrandom 0.3.4",
  "once_cell",
- "rustix 1.1.2",
+ "rustix",
  "windows-sys 0.61.2",
 ]
 
@@ -7324,6 +6898,8 @@ dependencies = [
  "chain-service",
  "ed25519-dalek",
  "executor-http-client",
+ "futures",
+ "key-management-system-service",
  "nomos-core",
  "rand 0.8.5",
  "testing-framework-config",
@@ -7331,13 +6907,11 @@ dependencies = [
  "thiserror 2.0.17",
  "tokio",
  "tracing",
- "zksign",
 ]
 
 [[package]]
 name = "tests"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "blst",
@@ -7348,7 +6922,6 @@ dependencies = [
  "common-http-client",
  "cryptarchia-engine",
  "cryptarchia-sync",
- "ed25519-dalek",
  "executor-http-client",
  "futures",
  "futures-util",
@@ -7357,7 +6930,6 @@ dependencies = [
  "key-management-system-service",
  "kzgrs-backend",
  "nomos-api",
- "nomos-blend",
  "nomos-blend-service",
  "nomos-core",
  "nomos-da-dispersal",
@@ -7388,7 +6960,6 @@ dependencies = [
  "tokio",
  "tracing",
  "tx-service",
- "zksign",
 ]
 
 [[package]]
@@ -7497,16 +7068,6 @@ checksum = "42d3e9c45c09de15d06dd8acf5f4e0e399e85927b7f00711024eb7ae10fa4869"
 dependencies = [
  "displaydoc",
  "zerovec",
-]
-
-[[package]]
-name = "tinytemplate"
-version = "1.2.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "be4d6b5f19ff7664e8c98d03e2139cb510db9b0a60b55f8e8709b689d939b6bc"
-dependencies = [
- "serde",
- "serde_json",
 ]
 
 [[package]]
@@ -7974,7 +7535,6 @@ checksum = "e421abadd41a4225275504ea4d6566923418b7f05506fbc9c0fe86ba7396114b"
 [[package]]
 name = "tx-service"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "async-trait",
  "futures",
@@ -8121,13 +7681,19 @@ dependencies = [
  "serde",
  "serde_json",
  "utoipa",
+ "utoipa-swagger-ui-vendored",
  "zip",
 ]
 
 [[package]]
+name = "utoipa-swagger-ui-vendored"
+version = "0.1.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e2eebbbfe4093922c2b6734d7c679ebfebd704a0d7e56dfcb0d05818ce28977d"
+
+[[package]]
 name = "utxotree"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "ark-ff 0.4.2",
  "groth16",
@@ -8180,15 +7746,14 @@ dependencies = [
 [[package]]
 name = "wallet"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
+ "key-management-system-keys",
  "nomos-core",
  "nomos-ledger",
  "num-bigint",
  "rpds",
  "thiserror 2.0.17",
  "tracing",
- "zksign",
 ]
 
 [[package]]
@@ -8313,18 +7878,6 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b2878ef029c47c6e8cf779119f20fcf52bde7ad42a731b2a304bc221df17571e"
 dependencies = [
  "rustls-pki-types",
-]
-
-[[package]]
-name = "which"
-version = "4.4.2"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "87ba24419a2078cd2b0f2ede2691b6c66d8e47836da3b6db8265ebad47afbfc7"
-dependencies = [
- "either",
- "home",
- "once_cell",
- "rustix 0.38.44",
 ]
 
 [[package]]
@@ -8479,15 +8032,6 @@ name = "windows-sys"
 version = "0.52.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "282be5f36a8ce781fad8c8ae18fa3f9beff57ec1b52cb3de0789201425d9a33d"
-dependencies = [
- "windows-targets 0.52.6",
-]
-
-[[package]]
-name = "windows-sys"
-version = "0.59.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "1e38bc4d79ed67fd075bcc251a1c39b32a1776bbe92e5bef1f0bf1f8c531853b"
 dependencies = [
  "windows-targets 0.52.6",
 ]
@@ -8754,7 +8298,6 @@ checksum = "f17a85883d4e6d00e8a97c586de764dabcc06133f7f1d55dce5cdc070ad7fe59"
 [[package]]
 name = "witness-generator"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
  "circuits-utils",
  "tempfile",
@@ -8964,19 +8507,18 @@ dependencies = [
 [[package]]
 name = "zksign"
 version = "0.1.0"
-source = "git+https://github.com/logos-co/nomos-node.git?rev=d2dd5a5084e1daef4032562c77d41de5e4d495f8#d2dd5a5084e1daef4032562c77d41de5e4d495f8"
 dependencies = [
- "ark-ff 0.4.2",
  "circuits-prover",
  "circuits-utils",
- "generic-array 1.3.5",
  "groth16",
  "num-bigint",
  "poseidon2",
  "serde",
  "serde_json",
  "thiserror 2.0.17",
- "tracing",
  "witness-generator",
- "zeroize",
 ]
+
+[[patch.unused]]
+name = "poc"
+version = "0.1.0"

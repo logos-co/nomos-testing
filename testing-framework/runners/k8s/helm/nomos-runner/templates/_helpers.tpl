@@ -2,6 +2,10 @@
 {{- .Chart.Name -}}
 {{- end -}}
 
+{{- define "nomos-runner.name" -}}
+{{- include "nomos-runner.chart" . -}}
+{{- end -}}
+
 {{- define "nomos-runner.fullname" -}}
 {{- printf "%s" .Release.Name | trunc 63 | trimSuffix "-" -}}
 {{- end -}}

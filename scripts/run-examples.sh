@@ -15,7 +15,7 @@ set -euo pipefail
 #   NOMOS_TESTNET_IMAGE           - image tag (default logos-blockchain-testing:local)
 #   NOMOS_CIRCUITS_PLATFORM       - override host platform detection
 #   NOMOS_CIRCUITS_REBUILD_RAPIDSNARK - set to 1 to force rapidsnark rebuild
-#   NOMOS_NODE_REV                - nomos-node git rev for local binaries (default d2dd5a5084e1daef4032562c77d41de5e4d495f8)
+#   NOMOS_BINARIES_TAR            - path to prebuilt binaries/circuits tarball (required; default .tmp/nomos-binaries-<mode>-<version>.tar.gz)
 
 usage() {
   cat <<'EOF'
@@ -36,8 +36,7 @@ Environment:
   NOMOS_TESTNET_IMAGE            Image tag (default logos-blockchain-testing:local)
   NOMOS_CIRCUITS_PLATFORM        Override host platform detection
   NOMOS_CIRCUITS_REBUILD_RAPIDSNARK  Force rapidsnark rebuild
-  NOMOS_NODE_REV                 nomos-node git rev (default d2dd5a5084e1daef4032562c77d41de5e4d495f8)
-  NOMOS_BINARIES_TAR             Path to prebuilt binaries/circuits tarball
+  NOMOS_BINARIES_TAR             Path to prebuilt binaries/circuits tarball (required)
   NOMOS_SKIP_IMAGE_BUILD         Set to 1 to skip rebuilding the compose/k8s image
 EOF
 }
@@ -70,19 +69,15 @@ if [ -f "${ROOT_DIR}/paths.env" ]; then
   . "${ROOT_DIR}/paths.env"
 fi
 readonly DEFAULT_VERSION="${VERSION:?Missing VERSION in versions.env}"
-readonly DEFAULT_NODE_REV="${NOMOS_NODE_REV:?Missing NOMOS_NODE_REV in versions.env}"
 readonly KZG_DIR_REL="${NOMOS_KZG_DIR_REL:-testing-framework/assets/stack/kzgrs_test_params}"
 readonly KZG_FILE="${NOMOS_KZG_FILE:-kzgrs_test_params}"
 readonly KZG_CONTAINER_PATH="${NOMOS_KZG_CONTAINER_PATH:-/kzgrs_test_params/kzgrs_test_params}"
 readonly HOST_KZG_DIR="${ROOT_DIR}/${KZG_DIR_REL}"
 readonly HOST_KZG_FILE="${HOST_KZG_DIR}/${KZG_FILE}"
-readonly HOST_CIRCUITS_DIR="${ROOT_DIR}/${NOMOS_CIRCUITS_HOST_DIR_REL:-.tmp/nomos-circuits-host}"
-readonly LINUX_CIRCUITS_DIR="${ROOT_DIR}/${NOMOS_CIRCUITS_LINUX_DIR_REL:-.tmp/nomos-circuits-linux}"
 MODE="compose"
 RUN_SECS_RAW=""
 VERSION="${DEFAULT_VERSION}"
 IMAGE="${NOMOS_TESTNET_IMAGE:-logos-blockchain-testing:local}"
-NOMOS_NODE_REV="${DEFAULT_NODE_REV}"
 DEMO_VALIDATORS=""
 DEMO_EXECUTORS=""
 while [ "$#" -gt 0 ]; do
@@ -145,15 +140,28 @@ default_tar_path() {
     return
   fi
   case "$MODE" in
-    host) echo "${ROOT_DIR}/.tmp/nomos-binaries-host-${VERSION}.tar.gz" ;;
-    compose|k8s) echo "${ROOT_DIR}/.tmp/nomos-binaries-linux-${VERSION}.tar.gz" ;;
+    host)
+      echo "${ROOT_DIR}/.tmp/nomos-binaries-host-${VERSION}.tar.gz"
+      ;;
+    compose|k8s)
+      # When skipping image rebuild, we need host-arch tools (witness generators) on the runner.
+      if [ "${NOMOS_SKIP_IMAGE_BUILD:-}" = "1" ]; then
+        echo "${ROOT_DIR}/.tmp/nomos-binaries-host-${VERSION}.tar.gz"
+      else
+        echo "${ROOT_DIR}/.tmp/nomos-binaries-linux-${VERSION}.tar.gz"
+      fi
+      ;;
     *) echo "${ROOT_DIR}/.tmp/nomos-binaries-${VERSION}.tar.gz" ;;
   esac
 }
 
 restore_binaries_from_tar() {
   local tar_path
-  tar_path="$(default_tar_path)"
+  if [ -n "${_RESTORE_TAR_OVERRIDE:-}" ]; then
+    tar_path="${_RESTORE_TAR_OVERRIDE}"
+  else
+    tar_path="$(default_tar_path)"
+  fi
   local extract_dir="${ROOT_DIR}/.tmp/nomos-binaries"
   if [ ! -f "$tar_path" ]; then
     return 1
@@ -169,11 +177,21 @@ restore_binaries_from_tar() {
   local bin_dst="${ROOT_DIR}/testing-framework/assets/stack/bin"
   local circuits_src="${src}/circuits"
   local circuits_dst="${HOST_KZG_DIR}"
+  RESTORED_BIN_DIR="${src}"
+  export RESTORED_BIN_DIR
   if [ -f "${src}/nomos-node" ] && [ -f "${src}/nomos-executor" ] && [ -f "${src}/nomos-cli" ]; then
-    mkdir -p "${bin_dst}"
-    cp "${src}/nomos-node" "${src}/nomos-executor" "${src}/nomos-cli" "${bin_dst}/"
+    local copy_bins=1
+    if [ "$MODE" != "host" ] && ! host_bin_matches_arch "${src}/nomos-node"; then
+      echo "Bundled binaries do not match host arch; skipping copy so containers rebuild from source."
+      copy_bins=0
+      rm -f "${bin_dst}/nomos-node" "${bin_dst}/nomos-executor" "${bin_dst}/nomos-cli"
+    fi
+    if [ "$copy_bins" -eq 1 ]; then
+      mkdir -p "${bin_dst}"
+      cp "${src}/nomos-node" "${src}/nomos-executor" "${src}/nomos-cli" "${bin_dst}/"
+    fi
   else
-    echo "Binaries missing in ${tar_path}; fallback to build-from-source path (run build-binaries workflow to populate)" >&2
+    echo "Binaries missing in ${tar_path}; provide a prebuilt binaries tarball." >&2
     return 1
   fi
   if [ -d "${circuits_src}" ] && [ -f "${circuits_src}/${KZG_FILE}" ]; then
@@ -186,7 +204,7 @@ restore_binaries_from_tar() {
       cp -a "${circuits_src}/." "${circuits_dst}/"
     fi
   else
-    echo "Circuits missing in ${tar_path}; fallback to download/build path (run build-binaries workflow to populate)" >&2
+    echo "Circuits missing in ${tar_path}; provide a prebuilt binaries/circuits tarball." >&2
     return 1
   fi
   RESTORED_BINARIES=1
@@ -211,107 +229,29 @@ host_bin_matches_arch() {
   return 1
 }
 
-ensure_host_binaries() {
-  # Build nomos-node/nomos-executor for the host if not already present.
-  HOST_SRC="${ROOT_DIR}/.tmp/nomos-node-host-src"
-  HOST_TARGET="${ROOT_DIR}/.tmp/nomos-node-host-target"
-  HOST_NODE_BIN_DEFAULT="${HOST_TARGET}/debug/nomos-node"
-  HOST_EXEC_BIN_DEFAULT="${HOST_TARGET}/debug/nomos-executor"
-  HOST_ASSET_NODE_BIN="${ROOT_DIR}/testing-framework/assets/stack/bin/nomos-node"
-  HOST_ASSET_EXEC_BIN="${ROOT_DIR}/testing-framework/assets/stack/bin/nomos-executor"
+HOST_TAR="${ROOT_DIR}/.tmp/nomos-binaries-host-${VERSION}.tar.gz"
+LINUX_TAR="${ROOT_DIR}/.tmp/nomos-binaries-linux-${VERSION}.tar.gz"
+NEED_HOST_RESTORE_AFTER_IMAGE=0
 
-  if [ -n "${NOMOS_NODE_BIN:-}" ] && [ -x "${NOMOS_NODE_BIN}" ] && [ -x "${NOMOS_EXECUTOR_BIN:-}" ]; then
-    if host_bin_matches_arch "${NOMOS_NODE_BIN}"; then
-      echo "Using provided host binaries:"
-      echo "  NOMOS_NODE_BIN=${NOMOS_NODE_BIN}"
-      echo "  NOMOS_EXECUTOR_BIN=${NOMOS_EXECUTOR_BIN}"
-      return
-    else
-      echo "Provided NOMOS_NODE_BIN does not match host arch; rebuilding..."
-    fi
+if [ -n "${NOMOS_NODE_BIN:-}" ] && [ -x "${NOMOS_NODE_BIN}" ] && [ -n "${NOMOS_EXECUTOR_BIN:-}" ] && [ -x "${NOMOS_EXECUTOR_BIN}" ]; then
+  echo "==> Using pre-specified host binaries (NOMOS_NODE_BIN/NOMOS_EXECUTOR_BIN); skipping tarball restore"
+else
+  # On non-Linux compose/k8s runs, use the Linux bundle for image build, then restore host bundle for the runner.
+  if [ "$MODE" != "host" ] && [ "$(uname -s)" != "Linux" ] && [ "${NOMOS_SKIP_IMAGE_BUILD:-0}" = "0" ] && [ -f "${LINUX_TAR}" ]; then
+    NEED_HOST_RESTORE_AFTER_IMAGE=1
+    _RESTORE_TAR_OVERRIDE="${LINUX_TAR}" restore_binaries_from_tar || true
+    unset _RESTORE_TAR_OVERRIDE
   fi
 
-  if host_bin_matches_arch "${HOST_NODE_BIN_DEFAULT}" && host_bin_matches_arch "${HOST_EXEC_BIN_DEFAULT}"; then
-    echo "Host binaries already built at ${HOST_TARGET}"
-    NOMOS_NODE_BIN="${HOST_NODE_BIN_DEFAULT}"
-    NOMOS_EXECUTOR_BIN="${HOST_EXEC_BIN_DEFAULT}"
-    export NOMOS_NODE_BIN NOMOS_EXECUTOR_BIN
-    return
+  if ! restore_binaries_from_tar; then
+    echo "ERROR: Missing or invalid binaries tarball. Provide it via NOMOS_BINARIES_TAR or place it at $(default_tar_path)." >&2
+    exit 1
   fi
+fi
 
-  if [ "${RESTORED_BINARIES}" -eq 1 ] && host_bin_matches_arch "${HOST_ASSET_NODE_BIN}" && host_bin_matches_arch "${HOST_ASSET_EXEC_BIN}"; then
-    echo "Using restored host binaries from bundle"
-    NOMOS_NODE_BIN="${HOST_ASSET_NODE_BIN}"
-    NOMOS_EXECUTOR_BIN="${HOST_ASSET_EXEC_BIN}"
-    export NOMOS_NODE_BIN NOMOS_EXECUTOR_BIN
-    return
-  fi
-
-  echo "Building host nomos-node/nomos-executor from ${NOMOS_NODE_REV}"
-  mkdir -p "${HOST_SRC}"
-  if [ ! -d "${HOST_SRC}/.git" ]; then
-    git clone https://github.com/logos-co/nomos-node.git "${HOST_SRC}"
-  fi
-  (
-    cd "${HOST_SRC}"
-    git fetch --depth 1 origin "${NOMOS_NODE_REV}"
-    git checkout "${NOMOS_NODE_REV}"
-    git reset --hard
-    git clean -fdx
-    echo "-> Compiling host binaries (may take a few minutes)..."
-    RUSTFLAGS='--cfg feature="pol-dev-mode"' \
-      NOMOS_CIRCUITS="${HOST_BUNDLE_PATH}" \
-      cargo build --features "testing" \
-        -p nomos-node -p nomos-executor -p nomos-cli \
-        --target-dir "${HOST_TARGET}"
-  )
-  NOMOS_NODE_BIN="${HOST_NODE_BIN_DEFAULT}"
-  NOMOS_EXECUTOR_BIN="${HOST_EXEC_BIN_DEFAULT}"
-  export NOMOS_NODE_BIN NOMOS_EXECUTOR_BIN
-}
-
-restore_binaries_from_tar || true
-
-echo "==> Preparing circuits (version ${VERSION})"
+echo "==> Using restored circuits/binaries bundle"
 SETUP_OUT="$(mktemp -t nomos-setup-output.XXXXXX)"
-if [ "${RESTORED_BINARIES}" -ne 1 ]; then
-  "${ROOT_DIR}/scripts/setup-circuits-stack.sh" "${VERSION}" </dev/null | tee "$SETUP_OUT"
-else
-  echo "Skipping circuits setup; using restored bundle"
-fi
-
-# When running compose/k8s on macOS, prefer host-installed circuits so the
-# host-side zksign tooling matches the host architecture even if the bundle was
-# restored from a linux tarball.
-if [ "${RESTORED_BINARIES}" -eq 1 ] && [ "$MODE" != "host" ] && [ "$(uname -s)" != "Linux" ]; then
-  "${ROOT_DIR}/scripts/setup-circuits-stack.sh" "${VERSION}" </dev/null | tee -a "$SETUP_OUT"
-fi
-
-# Prefer host-native bundle for host tooling when available; otherwise fall back
-# to the restored circuits location.
-if [ "$(uname -s)" != "Linux" ] && [ -d "${HOST_CIRCUITS_DIR}" ]; then
-  HOST_BUNDLE_PATH="${HOST_CIRCUITS_DIR}"
-elif [ "${RESTORED_BINARIES}" -eq 1 ]; then
-  HOST_BUNDLE_PATH="${HOST_KZG_DIR}"
-else
-  HOST_BUNDLE_PATH="${HOST_KZG_DIR}"
-fi
-
-# If the host bundle was somehow pruned, repair it once more.
-if [ ! -x "${HOST_BUNDLE_PATH}/zksign/witness_generator" ]; then
-  echo "Host circuits missing zksign/witness_generator; repairing..."
-  "${ROOT_DIR}/scripts/setup-circuits-stack.sh" "${VERSION}"
-fi
-KZG_HOST_PATH="${HOST_BUNDLE_PATH}/${KZG_FILE}"
-if [ ! -f "${KZG_HOST_PATH}" ]; then
-  echo "KZG params missing at ${KZG_HOST_PATH}; rebuilding circuits bundle"
-  "${ROOT_DIR}/scripts/setup-circuits-stack.sh" "${VERSION}"
-fi
-
 if [ "$MODE" != "host" ]; then
-  if [ "${RESTORED_BINARIES}" -ne 1 ]; then
-    echo "WARNING: NOMOS_BINARIES_TAR not restored; compose/k8s will rebuild binaries from source" >&2
-  fi
   if [ "${NOMOS_SKIP_IMAGE_BUILD:-0}" = "1" ]; then
     echo "==> Skipping testnet image rebuild (NOMOS_SKIP_IMAGE_BUILD=1)"
   else
@@ -321,21 +261,52 @@ if [ "$MODE" != "host" ]; then
   fi
 fi
 
-if [ "$MODE" = "host" ]; then
-  if [ "${RESTORED_BINARIES}" -eq 1 ] && [ "$(uname -s)" = "Linux" ]; then
-    tar_node="${ROOT_DIR}/testing-framework/assets/stack/bin/nomos-node"
-    tar_exec="${ROOT_DIR}/testing-framework/assets/stack/bin/nomos-executor"
-    if [ -x "${tar_node}" ] && [ -x "${tar_exec}" ]; then
-      echo "==> Using restored host binaries from tarball"
-      NOMOS_NODE_BIN="${tar_node}"
-      NOMOS_EXECUTOR_BIN="${tar_exec}"
-      export NOMOS_NODE_BIN NOMOS_EXECUTOR_BIN
-    else
-      echo "Restored tarball missing executables for host; building host binaries..."
-      ensure_host_binaries
-    fi
+if [ "${NEED_HOST_RESTORE_AFTER_IMAGE}" = "1" ]; then
+  if [ -f "${HOST_TAR}" ]; then
+    echo "==> Restoring host bundle for runner (${HOST_TAR})"
+    _RESTORE_TAR_OVERRIDE="${HOST_TAR}" restore_binaries_from_tar || {
+      echo "ERROR: Failed to restore host bundle from ${HOST_TAR}" >&2
+      exit 1
+    }
+    unset _RESTORE_TAR_OVERRIDE
+    echo "==> Using restored circuits/binaries bundle"
   else
-    ensure_host_binaries
+    echo "ERROR: Expected host bundle at ${HOST_TAR} for runner." >&2
+    exit 1
+  fi
+fi
+
+HOST_BUNDLE_PATH="${HOST_KZG_DIR}"
+
+# If the host bundle was somehow pruned, repair it once more.
+if [ ! -x "${HOST_BUNDLE_PATH}/zksign/witness_generator" ]; then
+  echo "ERROR: Missing zksign/witness_generator in restored bundle; ensure the tarball contains host-compatible circuits." >&2
+  exit 1
+fi
+KZG_HOST_PATH="${HOST_BUNDLE_PATH}/${KZG_FILE}"
+if [ ! -f "${KZG_HOST_PATH}" ]; then
+  echo "ERROR: KZG params missing at ${KZG_HOST_PATH}; ensure the tarball contains circuits." >&2
+  exit 1
+fi
+
+if [ "$MODE" = "host" ]; then
+  if [ -n "${NOMOS_NODE_BIN:-}" ] && [ -x "${NOMOS_NODE_BIN}" ] && [ -n "${NOMOS_EXECUTOR_BIN:-}" ] && [ -x "${NOMOS_EXECUTOR_BIN}" ]; then
+    echo "==> Using provided host binaries (env override)"
+  else
+    tar_node="${RESTORED_BIN_DIR:-${ROOT_DIR}/testing-framework/assets/stack/bin}/nomos-node"
+    tar_exec="${RESTORED_BIN_DIR:-${ROOT_DIR}/testing-framework/assets/stack/bin}/nomos-executor"
+  if [ ! -x "${tar_node}" ] || [ ! -x "${tar_exec}" ]; then
+    echo "ERROR: Restored tarball missing host executables; provide a host-compatible binaries tarball." >&2
+    exit 1
+  fi
+  if ! host_bin_matches_arch "${tar_node}" || ! host_bin_matches_arch "${tar_exec}"; then
+    echo "ERROR: Restored executables do not match host architecture; provide a host-compatible binaries tarball." >&2
+    exit 1
+  fi
+    echo "==> Using restored host binaries from tarball"
+    NOMOS_NODE_BIN="${tar_node}"
+    NOMOS_EXECUTOR_BIN="${tar_exec}"
+    export NOMOS_NODE_BIN NOMOS_EXECUTOR_BIN
   fi
 fi
 

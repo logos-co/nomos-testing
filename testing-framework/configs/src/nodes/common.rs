@@ -21,8 +21,7 @@ use nomos_node::{
                 SdpConfig as DeploymentSdpConfig, Settings as CryptarchiaDeploymentSettings,
             },
             serde::{
-                Config as CryptarchiaConfig, LeaderConfig as CryptarchiaLeaderConfig,
-                NetworkConfig as CryptarchiaNetworkConfig,
+                Config as CryptarchiaConfig, NetworkConfig as CryptarchiaNetworkConfig,
                 ServiceConfig as CryptarchiaServiceConfig,
             },
         },
@@ -96,11 +95,9 @@ pub(crate) fn cryptarchia_config(config: &GeneralConfig) -> CryptarchiaConfig {
                 },
             },
         },
-        leader: CryptarchiaLeaderConfig {
-            leader: ChainLeaderConfig {
-                pk: config.consensus_config.leader_config.pk,
-                sk: config.consensus_config.leader_config.sk.clone(),
-            },
+        leader: ChainLeaderConfig {
+            pk: config.consensus_config.leader_config.pk,
+            sk: config.consensus_config.leader_config.sk.clone(),
         },
     }
 }

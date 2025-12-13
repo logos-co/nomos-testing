@@ -5,8 +5,10 @@ use std::{
 
 use chain_leader::LeaderConfig;
 use cryptarchia_engine::EpochConfig;
-use ed25519_dalek::ed25519::signature::SignerMut as _;
 use groth16::CompressedGroth16Proof;
+use key_management_system_service::keys::{
+    Ed25519Key, UnsecuredZkKey, ZkKey, ZkPublicKey, ZkSignature,
+};
 use nomos_core::{
     mantle::{
         MantleTx, Note, OpProof, Utxo,
@@ -22,7 +24,6 @@ use nomos_core::{
 use nomos_node::{SignedMantleTx, Transaction as _};
 use nomos_utils::math::NonNegativeF64;
 use num_bigint::BigUint;
-use zksign::{PublicKey, SecretKey};
 
 use super::wallet::{WalletAccount, WalletConfig};
 
@@ -52,8 +53,8 @@ impl ConsensusParams {
 #[derive(Clone)]
 pub struct ProviderInfo {
     pub service_type: ServiceType,
-    pub provider_sk: ed25519_dalek::SigningKey,
-    pub zk_sk: SecretKey,
+    pub provider_sk: Ed25519Key,
+    pub zk_sk: ZkKey,
     pub locator: Locator,
     pub note: ServiceNote,
 }
@@ -61,11 +62,11 @@ pub struct ProviderInfo {
 impl ProviderInfo {
     #[must_use]
     pub fn provider_id(&self) -> ProviderId {
-        ProviderId(self.provider_sk.verifying_key())
+        ProviderId(self.provider_sk.public_key())
     }
 
     #[must_use]
-    pub fn zk_id(&self) -> PublicKey {
+    pub fn zk_id(&self) -> ZkPublicKey {
         self.zk_sk.to_public_key()
     }
 }
@@ -85,8 +86,8 @@ pub struct GeneralConsensusConfig {
 
 #[derive(Clone)]
 pub struct ServiceNote {
-    pub pk: PublicKey,
-    pub sk: SecretKey,
+    pub pk: ZkPublicKey,
+    pub sk: ZkKey,
     pub note: Note,
     pub output_index: usize,
 }
@@ -114,7 +115,7 @@ fn create_genesis_tx(utxos: &[Utxo]) -> GenesisTx {
     let signed_mantle_tx = SignedMantleTx {
         mantle_tx,
         ops_proofs: vec![OpProof::NoProof],
-        ledger_tx_proof: zksign::Signature::new(CompressedGroth16Proof::from_bytes(&[0u8; 128])),
+        ledger_tx_proof: ZkSignature::new(CompressedGroth16Proof::from_bytes(&[0u8; 128])),
     };
 
     // Wrap in GenesisTx
@@ -206,7 +207,7 @@ pub fn create_consensus_configs(
 
 fn create_utxos_for_leader_and_services(
     ids: &[[u8; 32]],
-    leader_keys: &mut Vec<(PublicKey, SecretKey)>,
+    leader_keys: &mut Vec<(ZkPublicKey, UnsecuredZkKey)>,
     blend_notes: &mut Vec<ServiceNote>,
     da_notes: &mut Vec<ServiceNote>,
 ) -> Vec<Utxo> {
@@ -229,7 +230,7 @@ fn create_utxos_for_leader_and_services(
     // Create notes for leader, Blend and DA declarations.
     for &id in ids {
         let sk_leader_data = derive_key_material(b"ld", &id);
-        let sk_leader = SecretKey::from(BigUint::from_bytes_le(&sk_leader_data));
+        let sk_leader = UnsecuredZkKey::from(BigUint::from_bytes_le(&sk_leader_data));
         let pk_leader = sk_leader.to_public_key();
         leader_keys.push((pk_leader, sk_leader));
         utxos.push(Utxo {
@@ -240,7 +241,7 @@ fn create_utxos_for_leader_and_services(
         output_index += 1;
 
         let sk_da_data = derive_key_material(b"da", &id);
-        let sk_da = SecretKey::from(BigUint::from_bytes_le(&sk_da_data));
+        let sk_da = ZkKey::from(BigUint::from_bytes_le(&sk_da_data));
         let pk_da = sk_da.to_public_key();
         let note_da = Note::new(1, pk_da);
         da_notes.push(ServiceNote {
@@ -257,7 +258,7 @@ fn create_utxos_for_leader_and_services(
         output_index += 1;
 
         let sk_blend_data = derive_key_material(b"bn", &id);
-        let sk_blend = SecretKey::from(BigUint::from_bytes_le(&sk_blend_data));
+        let sk_blend = ZkKey::from(BigUint::from_bytes_le(&sk_blend_data));
         let pk_blend = sk_blend.to_public_key();
         let note_blend = Note::new(1, pk_blend);
         blend_notes.push(ServiceNote {
@@ -331,13 +332,13 @@ pub fn create_genesis_tx_with_declarations(
     let mantle_tx_hash = mantle_tx.hash();
     let mut ops_proofs = vec![OpProof::NoProof];
 
-    for mut provider in providers {
+    for provider in providers {
         let zk_sig =
-            SecretKey::multi_sign(&[provider.note.sk, provider.zk_sk], mantle_tx_hash.as_ref())
+            ZkKey::multi_sign(&[provider.note.sk, provider.zk_sk], mantle_tx_hash.as_ref())
                 .unwrap();
         let ed25519_sig = provider
             .provider_sk
-            .sign(mantle_tx_hash.as_signing_bytes().as_ref());
+            .sign_payload(mantle_tx_hash.as_signing_bytes().as_ref());
 
         ops_proofs.push(OpProof::ZkAndEd25519Sigs {
             zk_sig,
@@ -348,7 +349,7 @@ pub fn create_genesis_tx_with_declarations(
     let signed_mantle_tx = SignedMantleTx {
         mantle_tx,
         ops_proofs,
-        ledger_tx_proof: zksign::Signature::new(CompressedGroth16Proof::from_bytes(&[0u8; 128])),
+        ledger_tx_proof: ZkSignature::new(CompressedGroth16Proof::from_bytes(&[0u8; 128])),
     };
 
     GenesisTx::from_tx(signed_mantle_tx).expect("Invalid genesis transaction")

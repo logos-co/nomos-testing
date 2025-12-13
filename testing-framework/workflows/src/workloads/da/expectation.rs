@@ -1,5 +1,6 @@
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
+    num::NonZeroU64,
     sync::{Arc, Mutex},
 };
 
@@ -12,9 +13,13 @@ use testing_framework_core::scenario::{BlockRecord, DynError, Expectation, RunCo
 use thiserror::Error;
 use tokio::sync::broadcast;
 
+use super::workload::{planned_blob_count, planned_channel_count, planned_channel_ids};
+
 #[derive(Debug)]
 pub struct DaWorkloadExpectation {
-    planned_channels: Vec<ChannelId>,
+    blob_rate_per_block: NonZeroU64,
+    channel_rate_per_block: NonZeroU64,
+    headroom_percent: u64,
     capture_state: Option<CaptureState>,
 }
 
@@ -22,7 +27,8 @@ pub struct DaWorkloadExpectation {
 struct CaptureState {
     planned: Arc<HashSet<ChannelId>>,
     inscriptions: Arc<Mutex<HashSet<ChannelId>>>,
-    blobs: Arc<Mutex<HashSet<ChannelId>>>,
+    blobs: Arc<Mutex<HashMap<ChannelId, u64>>>,
+    expected_total_blobs: u64,
 }
 
 const MIN_INCLUSION_RATIO: f64 = 0.8;
@@ -39,9 +45,15 @@ enum DaExpectationError {
 
 impl DaWorkloadExpectation {
     /// Validates that inscriptions and blobs landed for the planned channels.
-    pub const fn new(planned_channels: Vec<ChannelId>) -> Self {
+    pub const fn new(
+        blob_rate_per_block: NonZeroU64,
+        channel_rate_per_block: NonZeroU64,
+        headroom_percent: u64,
+    ) -> Self {
         Self {
-            planned_channels,
+            blob_rate_per_block,
+            channel_rate_per_block,
+            headroom_percent,
             capture_state: None,
         }
     }
@@ -58,19 +70,24 @@ impl Expectation for DaWorkloadExpectation {
             return Ok(());
         }
 
+        let planned_ids = planned_channel_ids(planned_channel_count(
+            self.channel_rate_per_block,
+            self.headroom_percent,
+        ));
+
+        let expected_total_blobs = planned_blob_count(self.blob_rate_per_block, &ctx.run_metrics());
+
         tracing::info!(
-            planned_channels = self.planned_channels.len(),
+            planned_channels = planned_ids.len(),
+            blob_rate_per_block = self.blob_rate_per_block.get(),
+            headroom_percent = self.headroom_percent,
+            expected_total_blobs,
             "DA inclusion expectation starting capture"
         );
 
-        let planned = Arc::new(
-            self.planned_channels
-                .iter()
-                .copied()
-                .collect::<HashSet<_>>(),
-        );
+        let planned = Arc::new(planned_ids.iter().copied().collect::<HashSet<_>>());
         let inscriptions = Arc::new(Mutex::new(HashSet::new()));
-        let blobs = Arc::new(Mutex::new(HashSet::new()));
+        let blobs = Arc::new(Mutex::new(HashMap::new()));
 
         let mut receiver = ctx.block_feed().subscribe();
         let planned_for_task = Arc::clone(&planned);
@@ -101,6 +118,7 @@ impl Expectation for DaWorkloadExpectation {
             planned,
             inscriptions,
             blobs,
+            expected_total_blobs,
         });
 
         Ok(())
@@ -135,20 +153,20 @@ impl Expectation for DaWorkloadExpectation {
             .into());
         }
 
-        let missing_blobs = {
+        let observed_total_blobs = {
             let blobs = state.blobs.lock().expect("blob lock poisoned");
-            missing_channels(&state.planned, &blobs)
+            blobs.values().sum::<u64>()
         };
-        let required_blobs = minimum_required(planned_total, MIN_INCLUSION_RATIO);
-        if planned_total.saturating_sub(missing_blobs.len()) < required_blobs {
+        let required_blobs = minimum_required_u64(state.expected_total_blobs, MIN_INCLUSION_RATIO);
+        if observed_total_blobs < required_blobs {
             tracing::warn!(
-                planned = planned_total,
-                missing = missing_blobs.len(),
+                planned = state.expected_total_blobs,
+                observed = observed_total_blobs,
                 required = required_blobs,
                 "DA expectation missing blobs"
             );
             return Err(DaExpectationError::MissingBlobs {
-                missing: missing_blobs,
+                missing: Vec::new(),
             }
             .into());
         }
@@ -156,7 +174,7 @@ impl Expectation for DaWorkloadExpectation {
         tracing::info!(
             planned = planned_total,
             inscriptions = planned_total - missing_inscriptions.len(),
-            blobs = planned_total - missing_blobs.len(),
+            blobs_observed = observed_total_blobs,
             "DA inclusion expectation satisfied"
         );
 
@@ -168,7 +186,7 @@ fn capture_block(
     block: &BlockRecord,
     planned: &HashSet<ChannelId>,
     inscriptions: &Arc<Mutex<HashSet<ChannelId>>>,
-    blobs: &Arc<Mutex<HashSet<ChannelId>>>,
+    blobs: &Arc<Mutex<HashMap<ChannelId, u64>>>,
 ) {
     let mut new_inscriptions = Vec::new();
     let mut new_blobs = Vec::new();
@@ -195,8 +213,14 @@ fn capture_block(
 
     if !new_blobs.is_empty() {
         let mut guard = blobs.lock().expect("blob lock poisoned");
-        guard.extend(new_blobs);
-        tracing::debug!(count = guard.len(), "DA expectation captured blobs");
+        for channel in new_blobs {
+            let entry = guard.entry(channel).or_insert(0);
+            *entry += 1;
+        }
+        tracing::debug!(
+            total_blobs = guard.values().sum::<u64>(),
+            "DA expectation captured blobs"
+        );
     }
 }
 
@@ -206,4 +230,8 @@ fn missing_channels(planned: &HashSet<ChannelId>, observed: &HashSet<ChannelId>)
 
 fn minimum_required(total: usize, ratio: f64) -> usize {
     ((total as f64) * ratio).ceil() as usize
+}
+
+fn minimum_required_u64(total: u64, ratio: f64) -> u64 {
+    ((total as f64) * ratio).ceil() as u64
 }

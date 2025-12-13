@@ -181,11 +181,11 @@ impl Topology {
     fn node_listen_ports(&self) -> Vec<u16> {
         self.validators
             .iter()
-            .map(|node| node.config().network.backend.inner.port)
+            .map(|node| node.config().network.backend.swarm.port)
             .chain(
                 self.executors
                     .iter()
-                    .map(|node| node.config().network.backend.inner.port),
+                    .map(|node| node.config().network.backend.swarm.port),
             )
             .collect()
     }
@@ -221,13 +221,13 @@ impl Topology {
             .map(|(idx, node)| {
                 format!(
                     "validator#{idx}@{}",
-                    node.config().network.backend.inner.port
+                    node.config().network.backend.swarm.port
                 )
             })
             .chain(self.executors.iter().enumerate().map(|(idx, node)| {
                 format!(
                     "executor#{idx}@{}",
-                    node.config().network.backend.inner.port
+                    node.config().network.backend.swarm.port
                 )
             }))
             .collect()

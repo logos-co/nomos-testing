@@ -11,10 +11,7 @@ pub mod wallet;
 use blend::GeneralBlendConfig;
 use consensus::{GeneralConsensusConfig, ProviderInfo, create_genesis_tx_with_declarations};
 use da::GeneralDaConfig;
-use key_management_system_service::{
-    backend::preload::PreloadKMSBackendSettings,
-    keys::{Ed25519Key, Key, ZkKey},
-};
+use key_management_system_service::{backend::preload::PreloadKMSBackendSettings, keys::Key};
 use network::GeneralNetworkConfig;
 use nomos_core::{
     mantle::GenesisTx as _,
@@ -126,8 +123,8 @@ pub fn create_general_configs_with_blend_core_subset(
     let kms_configs: Vec<_> = blend_configs
         .iter()
         .map(|blend_conf| {
-            let ed_key = Ed25519Key::new(blend_conf.signer.clone());
-            let zk_key = ZkKey::new(blend_conf.secret_zk_key.clone());
+            let ed_key = blend_conf.signer.clone();
+            let zk_key = blend_conf.secret_zk_key.clone();
             PreloadKMSBackendSettings {
                 keys: [
                     (

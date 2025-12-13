@@ -16,6 +16,7 @@ use nomos_node::{HeaderId, api::testing::handlers::HistoricSamplingRequest};
 use reqwest::{Client, RequestBuilder, Response, Url};
 use serde::{Serialize, de::DeserializeOwned};
 use serde_json::Value;
+use tracing::error;
 
 pub const DA_GET_TESTING_ENDPOINT_ERROR: &str = "Failed to connect to testing endpoint. The binary was likely built without the 'testing' \
      feature. Try: cargo build --workspace --all-features";
@@ -276,7 +277,17 @@ impl ApiClient {
 
     /// Submit a mantle transaction through the base API.
     pub async fn submit_transaction(&self, tx: &SignedMantleTx) -> reqwest::Result<()> {
-        self.post_json_unit(MEMPOOL_ADD_TX, tx).await
+        let res = self.post_json_response(MEMPOOL_ADD_TX, tx).await?;
+        if let Err(status_err) = res.error_for_status_ref() {
+            let status = res.status();
+            let body = res
+                .text()
+                .await
+                .unwrap_or_else(|_| "<unreadable body>".to_string());
+            error!(%status, %body, "submit_transaction request failed");
+            return Err(status_err);
+        }
+        Ok(())
     }
 
     /// Execute a custom request built by the caller.

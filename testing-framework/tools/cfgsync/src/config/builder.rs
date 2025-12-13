@@ -80,7 +80,7 @@ pub fn create_node_configs(
         .collect();
     let original_network_ports: Vec<u16> = network_configs
         .iter()
-        .map(|cfg| cfg.backend.inner.port)
+        .map(|cfg| cfg.backend.swarm.port)
         .collect();
     let peer_ids = build_peer_ids(&ids);
 
@@ -124,10 +124,10 @@ pub fn create_node_configs(
 
         // Libp2p network config.
         let mut network_config = network_configs[i].clone();
-        network_config.backend.inner.host = Ipv4Addr::from_str("0.0.0.0").unwrap();
-        network_config.backend.inner.port = host.network_port;
+        network_config.backend.swarm.host = Ipv4Addr::from_str("0.0.0.0").unwrap();
+        network_config.backend.swarm.port = host.network_port;
         network_config.backend.initial_peers = host_network_init_peers[i].clone();
-        network_config.backend.inner.nat_config = nomos_libp2p::NatSettings::Static {
+        network_config.backend.swarm.nat_config = nomos_libp2p::NatSettings::Static {
             external_address: Multiaddr::from_str(&format!(
                 "/ip4/{}/udp/{}/quic-v1",
                 host.ip, host.network_port

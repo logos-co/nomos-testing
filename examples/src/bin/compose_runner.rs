@@ -9,8 +9,8 @@ const DEFAULT_VALIDATORS: usize = 1;
 const DEFAULT_EXECUTORS: usize = 1;
 const DEFAULT_RUN_SECS: u64 = 60;
 const MIXED_TXS_PER_BLOCK: u64 = 5;
-const TOTAL_WALLETS: usize = 64;
-const TRANSACTION_WALLETS: usize = 8;
+const TOTAL_WALLETS: usize = 1000;
+const TRANSACTION_WALLETS: usize = 500;
 
 #[tokio::main]
 async fn main() {

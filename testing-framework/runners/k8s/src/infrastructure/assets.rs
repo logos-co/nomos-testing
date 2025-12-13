@@ -120,6 +120,7 @@ pub fn prepare_assets(topology: &GeneratedTopology) -> Result<RunnerAssets, Asse
 }
 
 const CFGSYNC_K8S_TIMEOUT_SECS: u64 = 300;
+const DEFAULT_GRAFANA_NODE_PORT: u16 = 30030;
 
 fn render_cfgsync_config(root: &Path, topology: &GeneratedTopology) -> Result<String, AssetsError> {
     let cfgsync_template_path = stack_assets_root(root).join("cfgsync.yaml");
@@ -243,6 +244,7 @@ struct HelmValues {
     cfgsync: CfgsyncValues,
     validators: NodeGroup,
     executors: NodeGroup,
+    grafana: GrafanaValues,
 }
 
 #[derive(Serialize)]
@@ -265,11 +267,43 @@ struct NodeValues {
     env: BTreeMap<String, String>,
 }
 
+#[derive(Serialize)]
+struct GrafanaValues {
+    enabled: bool,
+    image: String,
+    #[serde(rename = "imagePullPolicy")]
+    image_pull_policy: String,
+    #[serde(rename = "adminUser")]
+    admin_user: String,
+    #[serde(rename = "adminPassword")]
+    admin_password: String,
+    service: GrafanaServiceValues,
+}
+
+#[derive(Serialize)]
+struct GrafanaServiceValues {
+    #[serde(rename = "type")]
+    type_field: String,
+    #[serde(rename = "nodePort")]
+    node_port: Option<u16>,
+}
+
 fn build_values(topology: &GeneratedTopology) -> HelmValues {
     let cfgsync = CfgsyncValues {
         port: cfgsync_port(),
     };
     let pol_mode = pol_proof_mode();
+    let grafana = GrafanaValues {
+        enabled: true,
+        image: "grafana/grafana:10.4.1".into(),
+        image_pull_policy: "IfNotPresent".into(),
+        admin_user: "admin".into(),
+        admin_password: "admin".into(),
+        service: GrafanaServiceValues {
+            type_field: "NodePort".into(),
+            node_port: Some(DEFAULT_GRAFANA_NODE_PORT),
+        },
+    };
     debug!(pol_mode, "rendering Helm values for k8s stack");
     let validators = topology
         .validators()
@@ -355,6 +389,7 @@ fn build_values(topology: &GeneratedTopology) -> HelmValues {
             count: topology.executors().len(),
             nodes: executors,
         },
+        grafana,
     }
 }
 

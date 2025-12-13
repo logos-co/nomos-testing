@@ -58,7 +58,7 @@ impl NodeDescriptor {
         environment.extend([
             EnvEntry::new(
                 "CFG_NETWORK_PORT",
-                node.general.network_config.backend.inner.port.to_string(),
+                node.general.network_config.backend.swarm.port.to_string(),
             ),
             EnvEntry::new("CFG_DA_PORT", node.da_port.to_string()),
             EnvEntry::new("CFG_BLEND_PORT", node.blend_port.to_string()),

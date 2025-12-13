@@ -9,6 +9,7 @@ use std::{
 
 use anyhow::{Context as _, Result};
 use nomos_core::{block::Block, mantle::SignedMantleTx};
+use nomos_http_api_common::paths::STORAGE_BLOCK;
 use nomos_node::HeaderId;
 use tokio::{sync::broadcast, task::JoinHandle, time::sleep};
 use tracing::{debug, error};
@@ -108,7 +109,7 @@ impl BlockScanner {
     async fn run(&mut self) {
         loop {
             if let Err(err) = self.catch_up().await {
-                error!(%err, "block feed catch up failed");
+                error!(error = %err, error_debug = ?err, "block feed catch up failed");
             }
             sleep(POLL_INTERVAL).await;
         }
@@ -131,11 +132,22 @@ impl BlockScanner {
                 break;
             }
 
-            let block = self
-                .client
-                .storage_block(&cursor)
-                .await?
-                .context("missing block while catching up")?;
+            let block = match self.client.storage_block(&cursor).await {
+                Ok(block) => block,
+                Err(err) => {
+                    if err.is_decode() {
+                        if let Ok(resp) =
+                            self.client.post_json_response(STORAGE_BLOCK, &cursor).await
+                        {
+                            if let Ok(body) = resp.text().await {
+                                error!(header = ?cursor, %body, "failed to decode block response");
+                            }
+                        }
+                    }
+                    return Err(err.into());
+                }
+            }
+            .context("missing block while catching up")?;
 
             let parent = block.header().parent();
             stack.push((cursor, block));

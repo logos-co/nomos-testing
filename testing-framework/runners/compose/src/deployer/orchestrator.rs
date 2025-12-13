@@ -16,7 +16,10 @@ use super::{
 use crate::{
     docker::control::ComposeNodeControl,
     errors::ComposeRunnerError,
-    infrastructure::{environment::StackEnvironment, ports::compose_runner_host},
+    infrastructure::{
+        environment::StackEnvironment,
+        ports::{HostPortMapping, compose_runner_host},
+    },
     lifecycle::readiness::metrics_handle_from_port,
 };
 
@@ -71,6 +74,19 @@ impl DeploymentOrchestrator {
         let telemetry = metrics_handle_from_port(environment.prometheus_port(), &host)?;
         let node_control = self.maybe_node_control::<Caps>(&environment);
 
+        info!(
+            prometheus_url = %format!("http://{}:{}/", host, environment.prometheus_port()),
+            "prometheus endpoint available on host"
+        );
+        info!(
+            grafana_url = %format!("http://{}:{}/", host, environment.grafana_port()),
+            "grafana dashboard available on host"
+        );
+        log_profiling_urls(&host, &host_ports);
+
+        // Log profiling endpoints (profiling feature must be enabled in the binaries).
+        log_profiling_urls(&host, &host_ports);
+
         let (block_feed, block_feed_guard) = client_builder
             .start_block_feed(&node_clients, &mut environment)
             .await?;
@@ -111,5 +127,28 @@ impl DeploymentOrchestrator {
                 project_name: environment.project_name().to_owned(),
             }) as Arc<dyn NodeControlHandle>
         })
+    }
+}
+
+fn log_profiling_urls(host: &str, ports: &HostPortMapping) {
+    for (idx, node) in ports.validators.iter().enumerate() {
+        tracing::info!(
+            validator = idx,
+            profiling_url = %format!(
+                "http://{}:{}/debug/pprof/profile?seconds=15&format=proto",
+                host, node.api
+            ),
+            "validator profiling endpoint (profiling feature required)"
+        );
+    }
+    for (idx, node) in ports.executors.iter().enumerate() {
+        tracing::info!(
+            executor = idx,
+            profiling_url = %format!(
+                "http://{}:{}/debug/pprof/profile?seconds=15&format=proto",
+                host, node.api
+            ),
+            "executor profiling endpoint (profiling feature required)"
+        );
     }
 }

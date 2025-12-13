@@ -6,6 +6,7 @@ use std::{
 };
 
 use async_trait::async_trait;
+use key_management_system_service::keys::{ZkKey, ZkPublicKey};
 use nomos_core::mantle::{
     GenesisTx as _, Note, SignedMantleTx, Transaction as _, Utxo, tx_builder::MantleTxBuilder,
 };
@@ -15,7 +16,6 @@ use testing_framework_core::{
     topology::generation::{GeneratedNodeConfig, GeneratedTopology},
 };
 use tokio::time::sleep;
-use zksign::{PublicKey, SecretKey};
 
 use super::expectation::TxInclusionExpectation;
 use crate::workloads::util::submit_transaction_via_cluster;
@@ -214,7 +214,7 @@ fn build_wallet_transaction(input: &WalletInput) -> Result<SignedMantleTx, DynEr
     let mantle_tx = builder.build();
     let tx_hash = mantle_tx.hash();
 
-    let signature = SecretKey::multi_sign(
+    let signature = ZkKey::multi_sign(
         std::slice::from_ref(&input.account.secret_key),
         tx_hash.as_ref(),
     )
@@ -225,7 +225,7 @@ fn build_wallet_transaction(input: &WalletInput) -> Result<SignedMantleTx, DynEr
     })
 }
 
-fn wallet_utxo_map(node: &GeneratedNodeConfig) -> HashMap<PublicKey, Utxo> {
+fn wallet_utxo_map(node: &GeneratedNodeConfig) -> HashMap<ZkPublicKey, Utxo> {
     let genesis_tx = node.general.consensus_config.genesis_tx.clone();
     let ledger_tx = genesis_tx.mantle_tx().ledger_tx.clone();
     let tx_hash = ledger_tx.hash();

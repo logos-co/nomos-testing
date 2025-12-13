@@ -48,14 +48,15 @@ let mut plan = ScenarioBuilder::topology_with(|t| {
             .validators(1)
             .executors(1)
     })
-    .wallets(64)
+    .wallets(1_000)
     .transactions_with(|txs| {
         txs.rate(5)                 // 5 transactions per block
-            .users(8)
+            .users(500)             // use 500 of the seeded wallets
     })
     .da_with(|da| {
-        da.channel_rate(1)         // 1 channel operation per block
-            .blob_rate(1)          // 1 blob dispersal per block
+        da.channel_rate(1)          // 1 channel
+            .blob_rate(1)           // target 1 blob per block
+            .headroom_percent(20)   // default headroom when sizing channels
     })
     .expect_consensus_liveness()
     .with_run_duration(Duration::from_secs(60))
@@ -97,7 +98,7 @@ This defines **what** your test network looks like.
 ### 2. Wallet Seeding
 
 ```rust
-.wallets(64)                 // Seed 64 funded wallet accounts
+.wallets(1_000)              // Seed 1,000 funded wallet accounts
 ```
 
 Provides funded accounts for transaction submission.
@@ -107,11 +108,12 @@ Provides funded accounts for transaction submission.
 ```rust
 .transactions_with(|txs| {
     txs.rate(5)              // 5 transactions per block
-        .users(8)            // Use 8 of the 64 wallets
+        .users(500)          // Use 500 of the 1,000 wallets
 })
 .da_with(|da| {
-    da.channel_rate(1)       // 1 channel operation per block
-        .blob_rate(1)        // 1 blob dispersal per block
+    da.channel_rate(1)       // 1 DA channel (more spawned with headroom)
+        .blob_rate(1)        // target 1 blob per block
+        .headroom_percent(20)// default headroom when sizing channels
 })
 ```
 

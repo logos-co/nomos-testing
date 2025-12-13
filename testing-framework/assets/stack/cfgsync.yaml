@@ -33,16 +33,16 @@ retry_commitments_limit: 5
 
 # Tracing
 tracing_settings:
-  logger: !Loki
-    endpoint: http://loki:3100/
-    host_identifier: node
-  tracing: !Otlp
-    endpoint: http://tempo:4317/
-    sample_ratio: 0.5
-    service_name: node
+  # Write node logs to disk for debugging (avoid noisy stdout/trace DNS spam).
+  logger: !File
+    directory: /var/log/nomos
+    prefix: node
+  # Disable OTLP traces to remove DNS errors; metrics stay enabled below.
+  tracing: None
   filter: !EnvFilter
     filters:
       nomos: debug
+      cryptarchia: debug
   metrics: !Otlp
     endpoint: http://prometheus:9090/api/v1/otlp/v1/metrics
     host_identifier: node
