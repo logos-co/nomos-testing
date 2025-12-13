@@ -32,7 +32,8 @@ jobs:
           set -a
           . versions.env
           set +a
-          cat versions.env >> "$GITHUB_ENV"
+          # $GITHUB_ENV does not accept comments/blank lines; keep only KEY=VALUE exports.
+          grep -E '^[A-Za-z_][A-Za-z0-9_]*=' versions.env >> "$GITHUB_ENV"
           : "${VERSION:?Missing VERSION}"
           : "${NOMOS_NODE_REV:?Missing NOMOS_NODE_REV}"
           : "${NOMOS_BUNDLE_VERSION:?Missing NOMOS_BUNDLE_VERSION}"
